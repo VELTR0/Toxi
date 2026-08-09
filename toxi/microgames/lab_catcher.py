@@ -17,11 +17,13 @@ class LabCatcher(BaseMicrogame):
         self.speed = 430
         self.items: list[dict] = []
         xs = [250, 640, 1030]
+        fall_time_multiplier = 1.5
         for choice, x in zip(self.choices, xs):
             self.items.append({
                 "choice": choice,
                 "pos": pygame.Vector2(x, random.uniform(225, 340)),
-                "speed": random.uniform(70, 105),
+                # 1.5x fall time means 2/3 of the previous falling speed.
+                "speed": random.uniform(70, 105) / fall_time_multiplier,
                 "phase": random.uniform(0, math.tau),
             })
         self.elapsed = 0.0
