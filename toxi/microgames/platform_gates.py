@@ -28,7 +28,7 @@ class PlatformGates(BaseMicrogame):
             pygame.Rect(180, 580, 230, 24),
             pygame.Rect(450, 490, 230, 24),
             pygame.Rect(720, 400, 230, 24),
-            pygame.Rect(900, 320, 380, 24),
+            pygame.Rect(900, 340, 380, 24),
         ]
         # Nach dem Aufstieg kann man unter allen Türen entlanglaufen und
         # gezielt in die gewünschte Antwort springen.
