@@ -15,15 +15,28 @@ class MazePortals(BaseMicrogame):
         self.player = pygame.Vector2(640, 650)
         self.speed = 310
         self.size = 34
+        self.answer_font = ui.font(20, True)
         self.walls = [
             pygame.Rect(210, 350, 350, 28),
             pygame.Rect(720, 350, 350, 28),
             pygame.Rect(460, 500, 360, 28),
         ]
-        xs = [190, 515, 840]
+        centers = [215, 640, 1065]
         self.portals = []
-        for choice, x in zip(self.choices, xs):
-            self.portals.append((choice, pygame.Rect(x, 215, 250, 105)))
+        for choice, center_x in zip(self.choices, centers):
+            width, height = ui.adaptive_answer_size(
+                choice.text,
+                self.answer_font,
+                min_width=200,
+                max_width=330,
+                min_height=86,
+                padding_x=20,
+                padding_y=14,
+                line_gap=2,
+            )
+            portal = pygame.Rect(0, 0, width, height)
+            portal.midtop = (center_x, 205)
+            self.portals.append((choice, portal))
 
     def _move_axis(self, delta: pygame.Vector2) -> None:
         if delta.x:
@@ -69,11 +82,19 @@ class MazePortals(BaseMicrogame):
         self.screen.fill(ui.BG)
         self.draw_common()
         pygame.draw.rect(self.screen, (25, 31, 49), pygame.Rect(0, PLAY_TOP, SCREEN_W, SCREEN_H - PLAY_TOP))
-        answer_font = ui.font(20, True)
         for choice, portal in self.portals:
             pygame.draw.rect(self.screen, (46, 65, 94), portal, border_radius=18)
             pygame.draw.rect(self.screen, ui.ACCENT_2, portal, 4, border_radius=18)
-            ui.draw_wrapped(self.screen, choice.text, answer_font, ui.TEXT, portal.inflate(-18, -18), center=True, line_gap=2)
+            ui.draw_wrapped(
+                self.screen,
+                choice.text,
+                self.answer_font,
+                ui.TEXT,
+                portal.inflate(-28, -20),
+                center=True,
+                line_gap=2,
+                vertical_center=True,
+            )
         for wall in self.walls:
             pygame.draw.rect(self.screen, (76, 88, 109), wall, border_radius=8)
             for x in range(wall.left + 15, wall.right, 38):
