@@ -6,6 +6,7 @@ import pygame
 
 from . import ui
 from .data import QUESTIONS
+from .input import Controls
 from .microgames import MICROGAME_TYPES, SCREEN_H, SCREEN_W
 from .progress import MASTERY_TARGET, ProgressStore
 
@@ -17,6 +18,7 @@ class ToxiGame:
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
         self.clock = pygame.time.Clock()
         self.running = True
+        self.controls = Controls()
         self.question_by_id = {q["id"]: q for q in QUESTIONS}
         self.progress = ProgressStore(list(self.question_by_id))
         self.state = "menu"
@@ -34,36 +36,52 @@ class ToxiGame:
                 if event.type == pygame.QUIT:
                     self.running = False
                     continue
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    if self.state == "menu":
-                        self.running = False
-                    else:
-                        self.state = "menu"
-                        self.current_microgame = None
-                    continue
-                self._handle_event(event)
+                if self.state == "microgame" and self.current_microgame:
+                    self.current_microgame.handle_event(event)
 
+            # Polling after pygame.event.get() keeps keyboard and SDL controller
+            # state current and gives us edge-triggered A/B/X/Y actions.
+            self.controls.update()
+            self._handle_controls()
             self._update(dt)
             self._draw()
             pygame.display.flip()
 
         pygame.quit()
 
-    def _handle_event(self, event: pygame.event.Event) -> None:
+    def _handle_controls(self) -> None:
         if self.state == "menu":
-            if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            if self.controls.pressed("confirm"):
                 self._start_next_round()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            elif self.controls.pressed("reset"):
                 self.progress.reset()
-        elif self.state == "microgame" and self.current_microgame:
-            self.current_microgame.handle_event(event)
+                self.controls.rumble(0.2, 0.35, 120)
+            elif self.controls.pressed("back"):
+                self.running = False
+
+        elif self.state == "microgame":
+            if self.controls.pressed("back"):
+                self.state = "menu"
+                self.current_microgame = None
+                self.current_question = None
+                self.controls.consume_presses()
+
         elif self.state == "result":
-            if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            if self.controls.pressed("confirm"):
                 self._start_next_round()
+            elif self.controls.pressed("back"):
+                self.state = "menu"
+                self.current_microgame = None
+                self.controls.consume_presses()
+
         elif self.state == "finished":
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            if self.controls.pressed("reset"):
                 self.progress.reset()
                 self.state = "menu"
+                self.controls.rumble(0.2, 0.45, 180)
+                self.controls.consume_presses()
+            elif self.controls.pressed("back"):
+                self.running = False
 
     def _update(self, dt: float) -> None:
         if self.state != "microgame" or not self.current_microgame:
@@ -76,7 +94,12 @@ class ToxiGame:
             self.progress.record_result(question_id, self.last_correct)
             now = self.progress.points(question_id)
             self.last_became_learned = self.last_mastery_before < MASTERY_TARGET and now >= MASTERY_TARGET
+            if self.last_correct:
+                self.controls.rumble(0.15, 0.55, 160)
+            else:
+                self.controls.rumble(0.5, 0.15, 240)
             self.state = "result"
+            self.controls.consume_presses()
 
     def _start_next_round(self) -> None:
         pending = self.progress.pending_ids()
@@ -84,6 +107,7 @@ class ToxiGame:
             self.state = "finished"
             self.current_question = None
             self.current_microgame = None
+            self.controls.consume_presses()
             return
 
         min_points = min(self.progress.points(qid) for qid in pending)
@@ -102,8 +126,10 @@ class ToxiGame:
             question,
             self.progress.global_score,
             self.progress.points(qid),
+            self.controls,
         )
         self.state = "microgame"
+        self.controls.consume_presses()
 
     def _draw(self) -> None:
         if self.state == "menu":
@@ -115,33 +141,43 @@ class ToxiGame:
         elif self.state == "finished":
             self._draw_finished()
 
+    def _draw_controller_status(self, y: int) -> None:
+        label = f"Controller: {self.controls.controller_name}"
+        color = ui.ACCENT if self.controls.connected else ui.MUTED
+        img = ui.font(18, True).render(label, True, color)
+        self.screen.blit(img, img.get_rect(center=(SCREEN_W // 2, y)))
+
     def _draw_menu(self) -> None:
         self.screen.fill(ui.BG)
         title = ui.font(78, True).render("TOXI", True, ui.ACCENT)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 115)))
+        self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 105)))
         subtitle = ui.font(28, True).render("Toxikologie lernen als 2D-Microgame-Mix", True, ui.TEXT)
-        self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_W // 2, 180)))
+        self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_W // 2, 165)))
+        self._draw_controller_status(205)
 
         learned = self.progress.learned_count()
         total = len(QUESTIONS)
-        panel = pygame.Rect(250, 245, 780, 295)
+        panel = pygame.Rect(250, 235, 780, 285)
         ui.draw_panel(self.screen, panel)
         big = ui.font(34, True)
         normal = ui.font(24)
-        self.screen.blit(big.render(f"Global Score: {self.progress.global_score}", True, ui.GOLD), (300, 285))
-        self.screen.blit(big.render(f"Gelernt: {learned}/{total} Fragen", True, ui.ACCENT), (300, 335))
+        self.screen.blit(big.render(f"Global Score: {self.progress.global_score}", True, ui.GOLD), (300, 275))
+        self.screen.blit(big.render(f"Gelernt: {learned}/{total} Fragen", True, ui.ACCENT), (300, 325))
         ui.draw_wrapped(
             self.screen,
             "Jede Frage hat zwei abwechselnde Microgame-Level. Ein Sieg gibt der Frage +1 Lernpunkt. Bei 3/3 erscheint sie nicht mehr.",
             normal,
             ui.TEXT,
-            pygame.Rect(300, 395, 680, 100),
+            pygame.Rect(300, 385, 680, 100),
             center=True,
         )
-        start = ui.font(30, True).render("ENTER / LEERTASTE - starten", True, ui.ACCENT_2)
-        self.screen.blit(start, start.get_rect(center=(SCREEN_W // 2, 590)))
-        reset = ui.font(20).render("R - Fortschritt zurücksetzen | ESC - beenden", True, ui.MUTED)
-        self.screen.blit(reset, reset.get_rect(center=(SCREEN_W // 2, 640)))
+
+        start = ui.font(28, True).render("A / START - starten", True, ui.ACCENT_2)
+        self.screen.blit(start, start.get_rect(center=(SCREEN_W // 2, 565)))
+        controller_help = ui.font(21, True).render("Y - Fortschritt zurücksetzen   |   B - beenden", True, ui.TEXT)
+        self.screen.blit(controller_help, controller_help.get_rect(center=(SCREEN_W // 2, 610)))
+        keyboard = ui.font(17).render("Tastatur-Fallback: ENTER/LEERTASTE starten, R reset, ESC zurück", True, ui.MUTED)
+        self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 650)))
 
     def _draw_result(self) -> None:
         self.screen.fill(ui.BG)
@@ -151,40 +187,45 @@ class ToxiGame:
         color = ui.ACCENT if self.last_correct else ui.DANGER
         heading_text = "RICHTIG! +1" if self.last_correct else "NOCH NICHT"
         heading = ui.font(60, True).render(heading_text, True, color)
-        self.screen.blit(heading, heading.get_rect(center=(SCREEN_W // 2, 95)))
+        self.screen.blit(heading, heading.get_rect(center=(SCREEN_W // 2, 90)))
 
-        panel = pygame.Rect(150, 160, 980, 430)
+        panel = pygame.Rect(150, 150, 980, 430)
         ui.draw_panel(self.screen, panel)
         q_font = ui.font(29, True)
-        ui.draw_wrapped(self.screen, question["question"], q_font, ui.TEXT, pygame.Rect(200, 195, 880, 80), center=True)
+        ui.draw_wrapped(self.screen, question["question"], q_font, ui.TEXT, pygame.Rect(200, 185, 880, 80), center=True)
 
         correct_text = question["answers"][question["correct"]]
         ans_font = ui.font(27, True)
-        ui.draw_wrapped(self.screen, f"Richtige Antwort: {correct_text}", ans_font, ui.ACCENT, pygame.Rect(220, 295, 840, 75), center=True)
+        ui.draw_wrapped(self.screen, f"Richtige Antwort: {correct_text}", ans_font, ui.ACCENT, pygame.Rect(220, 285, 840, 75), center=True)
 
         expl_font = ui.font(23)
-        ui.draw_wrapped(self.screen, question["explanation"], expl_font, ui.TEXT, pygame.Rect(225, 380, 830, 110), center=True)
+        ui.draw_wrapped(self.screen, question["explanation"], expl_font, ui.TEXT, pygame.Rect(225, 370, 830, 110), center=True)
 
         mastery = self.progress.points(question["id"])
         status = f"Lernfortschritt: {mastery}/{MASTERY_TARGET} | Quelle in den Notizen: Seite {question['page']}"
         status_img = ui.font(21, True).render(status, True, ui.GOLD)
-        self.screen.blit(status_img, status_img.get_rect(center=(SCREEN_W // 2, 535)))
+        self.screen.blit(status_img, status_img.get_rect(center=(SCREEN_W // 2, 525)))
         if self.last_became_learned:
             learned = ui.font(24, True).render("GELERNT - diese Frage wird nicht mehr gezogen!", True, ui.ACCENT)
-            self.screen.blit(learned, learned.get_rect(center=(SCREEN_W // 2, 575)))
+            self.screen.blit(learned, learned.get_rect(center=(SCREEN_W // 2, 565)))
 
-        prompt = ui.font(25, True).render("ENTER / LEERTASTE - nächstes Microgame", True, ui.ACCENT_2)
-        self.screen.blit(prompt, prompt.get_rect(center=(SCREEN_W // 2, 650)))
+        prompt = ui.font(25, True).render("A - nächstes Microgame   |   B - Menü", True, ui.ACCENT_2)
+        self.screen.blit(prompt, prompt.get_rect(center=(SCREEN_W // 2, 635)))
+        keyboard = ui.font(17).render("Tastatur: ENTER/LEERTASTE = weiter, ESC = Menü", True, ui.MUTED)
+        self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 675)))
 
     def _draw_finished(self) -> None:
         self.screen.fill((12, 24, 28))
         title = ui.font(66, True).render("TOXI ABGESCHLOSSEN", True, ui.ACCENT)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 145)))
+        self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 135)))
         trophy = ui.font(105, True).render("★", True, ui.GOLD)
-        self.screen.blit(trophy, trophy.get_rect(center=(SCREEN_W // 2, 270)))
+        self.screen.blit(trophy, trophy.get_rect(center=(SCREEN_W // 2, 260)))
         score = ui.font(40, True).render(f"Finaler Global Score: {self.progress.global_score}", True, ui.TEXT)
-        self.screen.blit(score, score.get_rect(center=(SCREEN_W // 2, 390)))
+        self.screen.blit(score, score.get_rect(center=(SCREEN_W // 2, 380)))
         detail = ui.font(28).render(f"Alle {len(QUESTIONS)} Fragen sind bei 3/3 Lernpunkten.", True, ui.TEXT)
-        self.screen.blit(detail, detail.get_rect(center=(SCREEN_W // 2, 445)))
-        reset = ui.font(25, True).render("R - komplett neu starten | ESC - zurück/beenden", True, ui.ACCENT_2)
-        self.screen.blit(reset, reset.get_rect(center=(SCREEN_W // 2, 560)))
+        self.screen.blit(detail, detail.get_rect(center=(SCREEN_W // 2, 435)))
+        reset = ui.font(25, True).render("Y - komplett neu starten   |   B - beenden", True, ui.ACCENT_2)
+        self.screen.blit(reset, reset.get_rect(center=(SCREEN_W // 2, 545)))
+        keyboard = ui.font(17).render("Tastatur: R = neu starten, ESC = beenden", True, ui.MUTED)
+        self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 590)))
+        self._draw_controller_status(640)
