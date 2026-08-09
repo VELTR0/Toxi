@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import math
-import random
 import pygame
 
 from .. import ui
 from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
+
 class PlatformGates(BaseMicrogame):
-    instruction = "A/D oder Pfeile: laufen | LEERTASTE: springen | Berühre die richtige Tür"
+    instruction = "Controller: Stick/D-Pad laufen, A/X springen | Tastatur: A/D/Pfeile + Leertaste"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -40,15 +39,11 @@ class PlatformGates(BaseMicrogame):
         rect.midbottom = (int(self.player_pos.x), int(self.player_pos.y))
         return rect
 
-    def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and self.on_ground:
+    def update(self, dt: float) -> None:
+        self.player_vel.x = self.controls.move_x * self.speed
+        if self.controls.pressed("action") and self.on_ground:
             self.player_vel.y = -self.jump
             self.on_ground = False
-
-    def update(self, dt: float) -> None:
-        keys = pygame.key.get_pressed()
-        direction = int(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - int(keys[pygame.K_a] or keys[pygame.K_LEFT])
-        self.player_vel.x = direction * self.speed
 
         self.player_pos.x += self.player_vel.x * dt
         rect = self._player_rect()
