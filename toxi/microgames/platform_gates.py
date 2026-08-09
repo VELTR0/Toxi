@@ -25,24 +25,28 @@ class PlatformGates(BaseMicrogame):
         self.on_ground = False
         self.jump_buffer_timer = 0.0
         self.coyote_timer = 0.0
+        self.answer_font = ui.font(18, True)
 
         self.course_platforms, answer_slots = self._generate_platforms()
-        # Only the procedural course and the wide staging platform are physical.
-        # The three answers float above the staging area without their own platforms.
         self.platforms = self.course_platforms
         self.doors = []
         for choice, slot in answer_slots:
-            door = pygame.Rect(0, 0, slot.width - 18, 72)
+            width, height = ui.adaptive_answer_size(
+                choice.text,
+                self.answer_font,
+                min_width=170,
+                max_width=290,
+                min_height=72,
+                padding_x=18,
+                padding_y=12,
+                line_gap=1,
+            )
+            door = pygame.Rect(0, 0, width, height)
             door.midbottom = (slot.centerx, slot.top)
             self.doors.append((choice, door))
 
     def _generate_platforms(self) -> tuple[list[pygame.Rect], list[tuple[object, pygame.Rect]]]:
-        """Build a procedural course whose complete route is always reachable.
-
-        Every new step is generated relative to the previous one. Vertical rises
-        stay comfortably below the player's jump height and horizontal edge gaps
-        stay short enough to cross during a normal jump.
-        """
+        """Build a procedural course whose complete route is always reachable."""
         floor = pygame.Rect(0, 690, SCREEN_W, 30)
         platforms = [floor]
 
@@ -71,15 +75,12 @@ class PlatformGates(BaseMicrogame):
         hub.left = max(260, min(previous.centerx - 120, SCREEN_W - hub_width - 20))
         platforms.append(hub)
 
-        # Invisible slots only define where the three floating answer boxes sit.
-        # They are not added to self.platforms and therefore are neither drawn
-        # nor collidable as platforms.
-        answer_width = 210
-        base_centers = [480, 760, 1040]
+        # These invisible slots only position the floating answer boxes.
+        base_centers = [430, 760, 1090]
         answer_slots: list[tuple[object, pygame.Rect]] = []
         for choice, base_center in zip(self.choices, base_centers):
-            slot = pygame.Rect(0, 0, answer_width, 1)
-            slot.centerx = base_center + random.randint(-12, 12)
+            slot = pygame.Rect(0, 0, 1, 1)
+            slot.centerx = base_center + random.randint(-8, 8)
             slot.y = hub.top - random.randint(64, 72)
             answer_slots.append((choice, slot))
 
@@ -112,8 +113,6 @@ class PlatformGates(BaseMicrogame):
         if self.jump_buffer_timer > 0.0 and (self.on_ground or self.coyote_timer > 0.0):
             self._start_jump()
 
-        # Platforms behave like classic one-way platformer surfaces: they only
-        # catch the player from above. There is deliberately no side collision.
         self.player_pos.x += self.player_vel.x * dt
 
         old_bottom = self._player_rect().bottom
@@ -161,11 +160,19 @@ class PlatformGates(BaseMicrogame):
                 border_radius=4,
             )
 
-        answer_font = ui.font(18, True)
         for choice, door in self.doors:
             pygame.draw.rect(self.screen, (44, 55, 86), door, border_radius=12)
             pygame.draw.rect(self.screen, ui.GOLD, door, 3, border_radius=12)
-            ui.draw_wrapped(self.screen, choice.text, answer_font, ui.TEXT, door.inflate(-12, -10), center=True, line_gap=1)
+            ui.draw_wrapped(
+                self.screen,
+                choice.text,
+                self.answer_font,
+                ui.TEXT,
+                door.inflate(-24, -18),
+                center=True,
+                line_gap=1,
+                vertical_center=True,
+            )
 
         p = self._player_rect()
         pygame.draw.rect(self.screen, ui.ACCENT_2, p, border_radius=8)
