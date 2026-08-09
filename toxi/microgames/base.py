@@ -6,10 +6,12 @@ from dataclasses import dataclass
 import pygame
 
 from .. import ui
+from ..input import Controls
 
 SCREEN_W = 1280
 SCREEN_H = 720
 PLAY_TOP = 190
+
 
 @dataclass
 class AnswerChoice:
@@ -20,11 +22,19 @@ class AnswerChoice:
 class BaseMicrogame:
     instruction = ""
 
-    def __init__(self, screen: pygame.Surface, question: dict, score: int, mastery: int) -> None:
+    def __init__(
+        self,
+        screen: pygame.Surface,
+        question: dict,
+        score: int,
+        mastery: int,
+        controls: Controls,
+    ) -> None:
         self.screen = screen
         self.question = question
         self.score = score
         self.mastery = mastery
+        self.controls = controls
         self.done = False
         self.correct = False
         self.choices = [AnswerChoice(text, index) for index, text in enumerate(question["answers"])]
