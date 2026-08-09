@@ -6,3 +6,7 @@ obj/
 *.suo
 *.DS_Store
 artifacts/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
