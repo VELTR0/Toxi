@@ -7,8 +7,9 @@ import pygame
 from .. import ui
 from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
+
 class SwordArena(BaseMicrogame):
-    instruction = "WASD/Pfeile: bewegen | LEERTASTE: Schwertschlag | Triff die richtige Antwort"
+    instruction = "Controller: Stick/D-Pad bewegen, A/X schlagen | Tastatur: WASD/Pfeile + Leertaste"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -27,26 +28,20 @@ class SwordArena(BaseMicrogame):
                 "radius": 72,
             })
 
-    def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not self.done:
+    def update(self, dt: float) -> None:
+        move = self.controls.movement()
+        if move.length_squared():
+            self.player += move * self.speed * dt
+        self.player.x = max(55, min(SCREEN_W - 55, self.player.x))
+        self.player.y = max(PLAY_TOP + 55, min(SCREEN_H - 55, self.player.y))
+        self.slash_timer = max(0.0, self.slash_timer - dt)
+
+        if self.controls.pressed("action") and not self.done:
             self.slash_timer = 0.18
             for orb in self.orbs:
                 if self.player.distance_to(orb["pos"]) <= orb["radius"] + 95:
                     self.choose(orb["choice"])
                     break
-
-    def update(self, dt: float) -> None:
-        keys = pygame.key.get_pressed()
-        move = pygame.Vector2(
-            int(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - int(keys[pygame.K_a] or keys[pygame.K_LEFT]),
-            int(keys[pygame.K_s] or keys[pygame.K_DOWN]) - int(keys[pygame.K_w] or keys[pygame.K_UP]),
-        )
-        if move.length_squared():
-            move = move.normalize()
-            self.player += move * self.speed * dt
-        self.player.x = max(55, min(SCREEN_W - 55, self.player.x))
-        self.player.y = max(PLAY_TOP + 55, min(SCREEN_H - 55, self.player.y))
-        self.slash_timer = max(0.0, self.slash_timer - dt)
 
         for orb in self.orbs:
             orb["pos"] += orb["vel"] * dt
