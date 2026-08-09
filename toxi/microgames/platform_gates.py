@@ -37,30 +37,27 @@ class PlatformGates(BaseMicrogame):
     def _generate_platforms(self) -> tuple[list[pygame.Rect], list[tuple[object, pygame.Rect]]]:
         """Build a procedural course whose complete route is always reachable.
 
-        Instead of randomizing every platform independently, every new step is
-        generated relative to the previous one. Vertical rises stay comfortably
-        below the player's theoretical jump height and neighboring platforms
-        always overlap horizontally or have only a small edge gap.
+        Every new step is generated relative to the previous one. Vertical rises
+        stay comfortably below the player's jump height and horizontal edge gaps
+        stay short enough to cross during a normal jump.
         """
         floor = pygame.Rect(0, 690, SCREEN_W, 30)
         platforms = [floor]
 
-        # Four ascending steps. Keeping each rise around 70-80 px gives a large
-        # safety margin below the ~120 px ballistic jump apex.
         previous = floor
         center_x = random.randint(185, 235)
         for index in range(3):
             width = random.randint(205, 245)
-            rise = random.randint(70, 80)
+            rise = random.randint(68, 76)
             y = previous.top - rise
 
             if index > 0:
-                # Progress generally to the right, but keep the horizontal gap
-                # small enough that the next platform can always be reached.
                 previous_half = previous.width // 2
                 new_half = width // 2
-                max_center_step = previous_half + new_half + 55
-                center_x = previous.centerx + random.randint(145, max(145, max_center_step))
+                # At most a small positive edge gap. The player therefore never
+                # needs a near-max-distance jump to continue the staircase.
+                max_center_step = previous_half + new_half + 35
+                center_x = previous.centerx + random.randint(125, max(125, max_center_step))
 
             center_x = max(width // 2 + 20, min(SCREEN_W - width // 2 - 20, center_x))
             platform = pygame.Rect(0, y, width, 24)
@@ -68,24 +65,20 @@ class PlatformGates(BaseMicrogame):
             platforms.append(platform)
             previous = platform
 
-        # Wide staging platform. Its height and left edge are derived from the
-        # final staircase step so there is always a guaranteed transition onto it.
         hub_width = random.randint(820, 880)
-        hub_y = previous.top - random.randint(68, 78)
+        hub_y = previous.top - random.randint(64, 72)
         hub = pygame.Rect(0, hub_y, hub_width, 24)
-        hub.left = max(300, min(previous.right - 100, SCREEN_W - hub_width - 20))
+        # Force generous horizontal overlap with the final staircase platform.
+        hub.left = max(260, min(previous.centerx - 120, SCREEN_W - hub_width - 20))
         platforms.append(hub)
 
-        # Every answer has its own platform. All answer platforms sit only
-        # 68-78 px above the hub and their centers stay above the hub itself,
-        # making every answer reachable directly from the staging area.
         answer_width = 210
         base_centers = [480, 760, 1040]
         answer_platforms: list[tuple[object, pygame.Rect]] = []
         for choice, base_center in zip(self.choices, base_centers):
             platform = pygame.Rect(0, 0, answer_width, 22)
             platform.centerx = base_center + random.randint(-12, 12)
-            platform.y = hub.top - random.randint(68, 78)
+            platform.y = hub.top - random.randint(64, 72)
             answer_platforms.append((choice, platform))
 
         return platforms, answer_platforms
@@ -104,15 +97,11 @@ class PlatformGates(BaseMicrogame):
     def update(self, dt: float) -> None:
         self.player_vel.x = self.controls.move_x * self.speed
 
-        # Jump buffering makes rapid presses reliable: a jump pressed shortly
-        # before landing is remembered and fires as soon as the player lands.
         if self.controls.pressed("action"):
             self.jump_buffer_timer = self.JUMP_BUFFER_TIME
         else:
             self.jump_buffer_timer = max(0.0, self.jump_buffer_timer - dt)
 
-        # A tiny coyote-time window also prevents jumps from being lost on the
-        # exact frame the player walks off a platform edge.
         if self.on_ground:
             self.coyote_timer = self.COYOTE_TIME
         else:
@@ -121,15 +110,11 @@ class PlatformGates(BaseMicrogame):
         if self.jump_buffer_timer > 0.0 and (self.on_ground or self.coyote_timer > 0.0):
             self._start_jump()
 
+        # Platforms behave like classic one-way platformer surfaces: they only
+        # catch the player from above. There is deliberately no side collision.
+        # The previous side collision could pin the player against the edge of a
+        # higher procedural platform and make visually reachable layouts impossible.
         self.player_pos.x += self.player_vel.x * dt
-        rect = self._player_rect()
-        for platform in self.platforms:
-            if rect.colliderect(platform):
-                if self.player_vel.x > 0:
-                    rect.right = platform.left
-                elif self.player_vel.x < 0:
-                    rect.left = platform.right
-                self.player_pos.x = rect.centerx
 
         old_bottom = self._player_rect().bottom
         self.player_vel.y += self.gravity * dt
@@ -145,8 +130,6 @@ class PlatformGates(BaseMicrogame):
                     self.on_ground = True
                     break
 
-        # If jump was pressed just before touching down, launch immediately
-        # instead of requiring another button press after the landing frame.
         if self.on_ground and self.jump_buffer_timer > 0.0:
             self._start_jump()
 
