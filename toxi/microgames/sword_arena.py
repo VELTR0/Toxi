@@ -10,6 +10,8 @@ from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
 class SwordArena(BaseMicrogame):
     instruction = "Controller: Stick/D-Pad bewegen, A/X schlagen | Tastatur: WASD/Pfeile + Leertaste"
+    SLASH_DURATION = 0.18
+    SLASH_ROTATIONS = 2
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -37,7 +39,7 @@ class SwordArena(BaseMicrogame):
         self.slash_timer = max(0.0, self.slash_timer - dt)
 
         if self.controls.pressed("action") and not self.done:
-            self.slash_timer = 0.18
+            self.slash_timer = self.SLASH_DURATION
             for orb in self.orbs:
                 if self.player.distance_to(orb["pos"]) <= orb["radius"] + 95:
                     self.choose(orb["choice"])
@@ -52,6 +54,32 @@ class SwordArena(BaseMicrogame):
             if orb["pos"].y < PLAY_TOP + r or orb["pos"].y > SCREEN_H - r:
                 orb["vel"].y *= -1
                 orb["pos"].y = max(PLAY_TOP + r, min(SCREEN_H - r, orb["pos"].y))
+
+    def _draw_player(self) -> None:
+        """Draw the player as one sprite so the whole object can spin while slashing."""
+        sprite_size = 210
+        center = sprite_size // 2
+        sprite = pygame.Surface((sprite_size, sprite_size), pygame.SRCALPHA)
+
+        # Body plus two small details make the rotation readable even though the
+        # main body itself is circular.
+        pygame.draw.circle(sprite, ui.ACCENT, (center, center), 26)
+        pygame.draw.circle(sprite, ui.TEXT, (center, center), 26, 3)
+        pygame.draw.circle(sprite, ui.TEXT, (center + 9, center - 8), 4)
+        pygame.draw.circle(sprite, ui.TEXT, (center + 10, center + 7), 3)
+
+        sword_end = (center + 45, center - 32)
+        pygame.draw.line(sprite, ui.TEXT, (center, center), sword_end, 7)
+        pygame.draw.line(sprite, ui.GOLD, sword_end, (sword_end[0] + 22, sword_end[1] - 15), 5)
+
+        angle = 0.0
+        if self.slash_timer > 0:
+            progress = 1.0 - self.slash_timer / self.SLASH_DURATION
+            angle = -360.0 * self.SLASH_ROTATIONS * progress
+
+        rotated = pygame.transform.rotozoom(sprite, angle, 1.0)
+        target = rotated.get_rect(center=(int(self.player.x), int(self.player.y)))
+        self.screen.blit(rotated, target)
 
     def draw(self) -> None:
         self.screen.fill(ui.BG)
@@ -71,10 +99,6 @@ class SwordArena(BaseMicrogame):
             ui.draw_wrapped(self.screen, orb["choice"].text, answer_font, ui.TEXT, rect, center=True, line_gap=2)
 
         p = (int(self.player.x), int(self.player.y))
-        pygame.draw.circle(self.screen, ui.ACCENT, p, 26)
-        pygame.draw.circle(self.screen, ui.TEXT, p, 26, 3)
-        sword_end = (p[0] + 45, p[1] - 32)
-        pygame.draw.line(self.screen, ui.TEXT, p, sword_end, 7)
-        pygame.draw.line(self.screen, ui.GOLD, sword_end, (sword_end[0] + 22, sword_end[1] - 15), 5)
+        self._draw_player()
         if self.slash_timer > 0:
             pygame.draw.circle(self.screen, ui.GOLD, p, 95, 6)
