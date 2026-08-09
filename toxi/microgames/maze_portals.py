@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import math
 import random
 import pygame
 
 from .. import ui
 from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
+
 class MazePortals(BaseMicrogame):
-    instruction = "WASD/Pfeile: durch das Labor laufen | Betritt das richtige Portal"
+    instruction = "Controller: Stick/D-Pad durch das Labor | Tastatur: WASD/Pfeile | Betritt das richtige Portal"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -50,13 +50,9 @@ class MazePortals(BaseMicrogame):
                     self.player.y = rect.centery
 
     def update(self, dt: float) -> None:
-        keys = pygame.key.get_pressed()
-        move = pygame.Vector2(
-            int(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - int(keys[pygame.K_a] or keys[pygame.K_LEFT]),
-            int(keys[pygame.K_s] or keys[pygame.K_DOWN]) - int(keys[pygame.K_w] or keys[pygame.K_UP]),
-        )
+        move = self.controls.movement()
         if move.length_squared():
-            move = move.normalize() * self.speed * dt
+            move *= self.speed * dt
             self._move_axis(pygame.Vector2(move.x, 0))
             self._move_axis(pygame.Vector2(0, move.y))
         self.player.x = max(self.size / 2, min(SCREEN_W - self.size / 2, self.player.x))
