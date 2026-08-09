@@ -40,6 +40,74 @@ def wrap_text(text: str, fnt: pygame.font.Font, max_width: int) -> list[str]:
     return lines
 
 
+def measure_wrapped(
+    text: str,
+    fnt: pygame.font.Font,
+    max_width: int,
+    *,
+    line_gap: int = 5,
+) -> tuple[int, int, list[str]]:
+    lines = wrap_text(text, fnt, max(1, max_width))
+    widths = [fnt.size(line)[0] for line in lines]
+    line_height = fnt.get_height()
+    height = len(lines) * line_height + max(0, len(lines) - 1) * line_gap
+    return max(widths, default=0), height, lines
+
+
+def adaptive_answer_size(
+    text: str,
+    fnt: pygame.font.Font,
+    *,
+    min_width: int = 140,
+    max_width: int = 300,
+    min_height: int = 64,
+    padding_x: int = 18,
+    padding_y: int = 12,
+    line_gap: int = 2,
+) -> tuple[int, int]:
+    """Return a box size that grows with the answer text.
+
+    Short answers stay compact. Long answers grow horizontally up to max_width
+    and then vertically according to the wrapped line count, so text never has
+    to spill outside a fixed-size answer object.
+    """
+    natural_width = fnt.size(text)[0] + padding_x * 2
+    width = max(min_width, min(max_width, natural_width))
+    _, content_height, _ = measure_wrapped(
+        text,
+        fnt,
+        width - padding_x * 2,
+        line_gap=line_gap,
+    )
+    height = max(min_height, content_height + padding_y * 2)
+    return int(width), int(height)
+
+
+def adaptive_circle_radius(
+    text: str,
+    fnt: pygame.font.Font,
+    *,
+    min_radius: int = 64,
+    max_radius: int = 130,
+    padding: int = 12,
+    line_gap: int = 2,
+) -> int:
+    """Find the smallest circle that comfortably contains wrapped answer text."""
+    for radius in range(min_radius, max_radius + 1, 3):
+        # A centered square around 1.4r wide/high sits comfortably inside a
+        # circle while leaving visible breathing room around the text.
+        inner = max(40, int(radius * 1.4) - padding * 2)
+        content_width, content_height, _ = measure_wrapped(
+            text,
+            fnt,
+            inner,
+            line_gap=line_gap,
+        )
+        if content_width <= inner and content_height <= inner:
+            return radius
+    return max_radius
+
+
 def draw_wrapped(
     surface: pygame.Surface,
     text: str,
@@ -49,14 +117,17 @@ def draw_wrapped(
     *,
     center: bool = False,
     line_gap: int = 5,
+    vertical_center: bool = False,
 ) -> int:
     lines = wrap_text(text, fnt, rect.width)
-    y = rect.y
+    line_height = fnt.get_height()
+    total_height = len(lines) * line_height + max(0, len(lines) - 1) * line_gap
+    y = rect.centery - total_height // 2 if vertical_center else rect.y
     for line in lines:
         rendered = fnt.render(line, True, color)
         x = rect.centerx - rendered.get_width() // 2 if center else rect.x
         surface.blit(rendered, (x, y))
-        y += rendered.get_height() + line_gap
+        y += line_height + line_gap
     return y
 
 
