@@ -30,20 +30,25 @@ class SwordArena(BaseMicrogame):
                 "radius": 72,
             })
 
+    def _check_slash_hits(self) -> None:
+        """Choose an answer whenever an orb enters the active slash radius."""
+        if self.done or self.slash_timer <= 0.0:
+            return
+        for orb in self.orbs:
+            if self.player.distance_to(orb["pos"]) <= orb["radius"] + 95:
+                self.choose(orb["choice"])
+                break
+
     def update(self, dt: float) -> None:
         move = self.controls.movement()
         if move.length_squared():
             self.player += move * self.speed * dt
         self.player.x = max(55, min(SCREEN_W - 55, self.player.x))
         self.player.y = max(PLAY_TOP + 55, min(SCREEN_H - 55, self.player.y))
-        self.slash_timer = max(0.0, self.slash_timer - dt)
 
+        self.slash_timer = max(0.0, self.slash_timer - dt)
         if self.controls.pressed("action") and not self.done:
             self.slash_timer = self.SLASH_DURATION
-            for orb in self.orbs:
-                if self.player.distance_to(orb["pos"]) <= orb["radius"] + 95:
-                    self.choose(orb["choice"])
-                    break
 
         for orb in self.orbs:
             orb["pos"] += orb["vel"] * dt
@@ -55,14 +60,17 @@ class SwordArena(BaseMicrogame):
                 orb["vel"].y *= -1
                 orb["pos"].y = max(PLAY_TOP + r, min(SCREEN_H - r, orb["pos"].y))
 
+        # Hit detection stays active for the entire spin animation. This means
+        # either the player or a moving answer orb can enter range after the
+        # attack button was pressed and still be selected by that same slash.
+        self._check_slash_hits()
+
     def _draw_player(self) -> None:
         """Draw the player as one sprite so the whole object can spin while slashing."""
         sprite_size = 210
         center = sprite_size // 2
         sprite = pygame.Surface((sprite_size, sprite_size), pygame.SRCALPHA)
 
-        # Body plus two small details make the rotation readable even though the
-        # main body itself is circular.
         pygame.draw.circle(sprite, ui.ACCENT, (center, center), 26)
         pygame.draw.circle(sprite, ui.TEXT, (center, center), 26, 3)
         pygame.draw.circle(sprite, ui.TEXT, (center + 9, center - 8), 4)
