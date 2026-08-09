@@ -35,47 +35,57 @@ class PlatformGates(BaseMicrogame):
             self.doors.append((choice, door))
 
     def _generate_platforms(self) -> tuple[list[pygame.Rect], list[tuple[object, pygame.Rect]]]:
-        """Build a fresh but deliberately reachable one-screen course.
+        """Build a procedural course whose complete route is always reachable.
 
-        The lower staircase is randomized each round. A wide final staging
-        platform gives the player room to choose before jumping to one of three
-        physically separate answer platforms.
+        Instead of randomizing every platform independently, every new step is
+        generated relative to the previous one. Vertical rises stay comfortably
+        below the player's theoretical jump height and neighboring platforms
+        always overlap horizontally or have only a small edge gap.
         """
-        platforms = [pygame.Rect(0, 690, SCREEN_W, 30)]
+        floor = pygame.Rect(0, 690, SCREEN_W, 30)
+        platforms = [floor]
 
-        # Procedural staircase. Vertical and horizontal gaps stay inside the
-        # character's jump envelope so random layouts cannot become impossible.
-        center_x = random.randint(185, 225)
-        y_bases = (590, 520, 450)
-        for index, base_y in enumerate(y_bases):
-            width = random.randint(190, 235)
-            y = base_y + random.randint(-10, 10)
+        # Four ascending steps. Keeping each rise around 70-80 px gives a large
+        # safety margin below the ~120 px ballistic jump apex.
+        previous = floor
+        center_x = random.randint(185, 235)
+        for index in range(3):
+            width = random.randint(205, 245)
+            rise = random.randint(70, 80)
+            y = previous.top - rise
+
             if index > 0:
-                center_x += random.randint(155, 205)
+                # Progress generally to the right, but keep the horizontal gap
+                # small enough that the next platform can always be reached.
+                previous_half = previous.width // 2
+                new_half = width // 2
+                max_center_step = previous_half + new_half + 55
+                center_x = previous.centerx + random.randint(145, max(145, max_center_step))
+
             center_x = max(width // 2 + 20, min(SCREEN_W - width // 2 - 20, center_x))
             platform = pygame.Rect(0, y, width, 24)
             platform.centerx = center_x
             platforms.append(platform)
+            previous = platform
 
-        # Last neutral platform: wide enough to stand below any answer and
-        # deliberately separated from the answer row above it.
-        hub_y = random.randint(375, 392)
-        hub_width = random.randint(790, 850)
+        # Wide staging platform. Its height and left edge are derived from the
+        # final staircase step so there is always a guaranteed transition onto it.
+        hub_width = random.randint(820, 880)
+        hub_y = previous.top - random.randint(68, 78)
         hub = pygame.Rect(0, hub_y, hub_width, 24)
-        hub.x = random.randint(340, 380)
-        if hub.right > SCREEN_W - 20:
-            hub.right = SCREEN_W - 20
+        hub.left = max(300, min(previous.right - 100, SCREEN_W - hub_width - 20))
         platforms.append(hub)
 
-        # Each answer gets its own platform. Their exact position and height
-        # vary slightly, but all three remain reachable directly from the hub.
+        # Every answer has its own platform. All answer platforms sit only
+        # 68-78 px above the hub and their centers stay above the hub itself,
+        # making every answer reachable directly from the staging area.
         answer_width = 210
-        base_centers = [470, 750, 1030]
+        base_centers = [480, 760, 1040]
         answer_platforms: list[tuple[object, pygame.Rect]] = []
         for choice, base_center in zip(self.choices, base_centers):
             platform = pygame.Rect(0, 0, answer_width, 22)
-            platform.centerx = base_center + random.randint(-18, 18)
-            platform.y = hub_y - random.randint(88, 102)
+            platform.centerx = base_center + random.randint(-12, 12)
+            platform.y = hub.top - random.randint(68, 78)
             answer_platforms.append((choice, platform))
 
         return platforms, answer_platforms
