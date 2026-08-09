@@ -52,9 +52,11 @@ class BaseMicrogame:
 
     def draw_common(self) -> None:
         ui.draw_question_header(self.screen, self.question, self.score, self.mastery)
-        fnt = ui.font(19, True)
+        fnt = ui.font(18, True)
         hint = fnt.render(self.instruction, True, ui.MUTED)
-        self.screen.blit(hint, hint.get_rect(center=(SCREEN_W // 2, 180)))
+        self.screen.blit(hint, hint.get_rect(center=(SCREEN_W // 2, 178)))
+        back = ui.font(16, True).render("B: Menü", True, ui.MUTED)
+        self.screen.blit(back, back.get_rect(topright=(SCREEN_W - 18, 166)))
 
     def draw(self) -> None:
         raise NotImplementedError
