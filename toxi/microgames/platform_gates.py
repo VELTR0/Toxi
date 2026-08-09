@@ -26,12 +26,14 @@ class PlatformGates(BaseMicrogame):
         self.jump_buffer_timer = 0.0
         self.coyote_timer = 0.0
 
-        self.course_platforms, self.answer_platforms = self._generate_platforms()
-        self.platforms = self.course_platforms + [platform for _, platform in self.answer_platforms]
+        self.course_platforms, answer_slots = self._generate_platforms()
+        # Only the procedural course and the wide staging platform are physical.
+        # The three answers float above the staging area without their own platforms.
+        self.platforms = self.course_platforms
         self.doors = []
-        for choice, platform in self.answer_platforms:
-            door = pygame.Rect(0, 0, platform.width - 18, 72)
-            door.midbottom = (platform.centerx, platform.top)
+        for choice, slot in answer_slots:
+            door = pygame.Rect(0, 0, slot.width - 18, 72)
+            door.midbottom = (slot.centerx, slot.top)
             self.doors.append((choice, door))
 
     def _generate_platforms(self) -> tuple[list[pygame.Rect], list[tuple[object, pygame.Rect]]]:
@@ -54,8 +56,6 @@ class PlatformGates(BaseMicrogame):
             if index > 0:
                 previous_half = previous.width // 2
                 new_half = width // 2
-                # At most a small positive edge gap. The player therefore never
-                # needs a near-max-distance jump to continue the staircase.
                 max_center_step = previous_half + new_half + 35
                 center_x = previous.centerx + random.randint(125, max(125, max_center_step))
 
@@ -68,20 +68,22 @@ class PlatformGates(BaseMicrogame):
         hub_width = random.randint(820, 880)
         hub_y = previous.top - random.randint(64, 72)
         hub = pygame.Rect(0, hub_y, hub_width, 24)
-        # Force generous horizontal overlap with the final staircase platform.
         hub.left = max(260, min(previous.centerx - 120, SCREEN_W - hub_width - 20))
         platforms.append(hub)
 
+        # Invisible slots only define where the three floating answer boxes sit.
+        # They are not added to self.platforms and therefore are neither drawn
+        # nor collidable as platforms.
         answer_width = 210
         base_centers = [480, 760, 1040]
-        answer_platforms: list[tuple[object, pygame.Rect]] = []
+        answer_slots: list[tuple[object, pygame.Rect]] = []
         for choice, base_center in zip(self.choices, base_centers):
-            platform = pygame.Rect(0, 0, answer_width, 22)
-            platform.centerx = base_center + random.randint(-12, 12)
-            platform.y = hub.top - random.randint(64, 72)
-            answer_platforms.append((choice, platform))
+            slot = pygame.Rect(0, 0, answer_width, 1)
+            slot.centerx = base_center + random.randint(-12, 12)
+            slot.y = hub.top - random.randint(64, 72)
+            answer_slots.append((choice, slot))
 
-        return platforms, answer_platforms
+        return platforms, answer_slots
 
     def _player_rect(self) -> pygame.Rect:
         rect = pygame.Rect(0, 0, int(self.player_size.x), int(self.player_size.y))
@@ -112,8 +114,6 @@ class PlatformGates(BaseMicrogame):
 
         # Platforms behave like classic one-way platformer surfaces: they only
         # catch the player from above. There is deliberately no side collision.
-        # The previous side collision could pin the player against the edge of a
-        # higher procedural platform and make visually reachable layouts impossible.
         self.player_pos.x += self.player_vel.x * dt
 
         old_bottom = self._player_rect().bottom
@@ -152,15 +152,11 @@ class PlatformGates(BaseMicrogame):
         self.draw_common()
         pygame.draw.rect(self.screen, (25, 32, 55), pygame.Rect(0, PLAY_TOP, SCREEN_W, SCREEN_H - PLAY_TOP))
 
-        answer_rects = {id(platform) for _, platform in self.answer_platforms}
         for platform in self.platforms:
-            is_answer = id(platform) in answer_rects
-            body_color = (58, 70, 101) if is_answer else (71, 86, 112)
-            edge_color = ui.GOLD if is_answer else ui.ACCENT
-            pygame.draw.rect(self.screen, body_color, platform, border_radius=7)
+            pygame.draw.rect(self.screen, (71, 86, 112), platform, border_radius=7)
             pygame.draw.rect(
                 self.screen,
-                edge_color,
+                ui.ACCENT,
                 pygame.Rect(platform.x, platform.y, platform.width, 5),
                 border_radius=4,
             )
