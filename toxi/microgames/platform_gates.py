@@ -9,6 +9,9 @@ from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 class PlatformGates(BaseMicrogame):
     instruction = "Controller: Stick/D-Pad laufen, A/X springen | Tastatur: A/D/Pfeile + Leertaste"
 
+    JUMP_BUFFER_TIME = 0.14
+    COYOTE_TIME = 0.10
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.player_pos = pygame.Vector2(90, 635)
@@ -18,6 +21,8 @@ class PlatformGates(BaseMicrogame):
         self.jump = 600
         self.gravity = 1500
         self.on_ground = False
+        self.jump_buffer_timer = 0.0
+        self.coyote_timer = 0.0
         self.platforms = [
             pygame.Rect(0, 690, SCREEN_W, 30),
             pygame.Rect(180, 580, 230, 24),
@@ -39,11 +44,31 @@ class PlatformGates(BaseMicrogame):
         rect.midbottom = (int(self.player_pos.x), int(self.player_pos.y))
         return rect
 
+    def _start_jump(self) -> None:
+        self.player_vel.y = -self.jump
+        self.on_ground = False
+        self.jump_buffer_timer = 0.0
+        self.coyote_timer = 0.0
+
     def update(self, dt: float) -> None:
         self.player_vel.x = self.controls.move_x * self.speed
-        if self.controls.pressed("action") and self.on_ground:
-            self.player_vel.y = -self.jump
-            self.on_ground = False
+
+        # Jump buffering makes rapid presses reliable: a jump pressed shortly
+        # before landing is remembered and fires as soon as the player lands.
+        if self.controls.pressed("action"):
+            self.jump_buffer_timer = self.JUMP_BUFFER_TIME
+        else:
+            self.jump_buffer_timer = max(0.0, self.jump_buffer_timer - dt)
+
+        # A tiny coyote-time window also prevents jumps from being lost on the
+        # exact frame the player walks off a platform edge.
+        if self.on_ground:
+            self.coyote_timer = self.COYOTE_TIME
+        else:
+            self.coyote_timer = max(0.0, self.coyote_timer - dt)
+
+        if self.jump_buffer_timer > 0.0 and (self.on_ground or self.coyote_timer > 0.0):
+            self._start_jump()
 
         self.player_pos.x += self.player_vel.x * dt
         rect = self._player_rect()
@@ -69,10 +94,18 @@ class PlatformGates(BaseMicrogame):
                     self.on_ground = True
                     break
 
+        # If jump was pressed just before touching down, launch immediately
+        # instead of requiring another button press after the landing frame.
+        if self.on_ground and self.jump_buffer_timer > 0.0:
+            self._start_jump()
+
         self.player_pos.x = max(18, min(SCREEN_W - 18, self.player_pos.x))
         if self.player_pos.y > SCREEN_H + 100:
             self.player_pos.update(90, 635)
             self.player_vel.update(0, 0)
+            self.on_ground = False
+            self.jump_buffer_timer = 0.0
+            self.coyote_timer = 0.0
 
         p_rect = self._player_rect()
         for choice, door in self.doors:
