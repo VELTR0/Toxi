@@ -7,8 +7,9 @@ import pygame
 from .. import ui
 from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
+
 class LabCatcher(BaseMicrogame):
-    instruction = "A/D oder Pfeile: Fangkorb bewegen | Fange die richtige Antwort"
+    instruction = "Controller: Stick/D-Pad links/rechts | Tastatur: A/D/Pfeile | Fange die richtige Antwort"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -27,9 +28,7 @@ class LabCatcher(BaseMicrogame):
 
     def update(self, dt: float) -> None:
         self.elapsed += dt
-        keys = pygame.key.get_pressed()
-        direction = int(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - int(keys[pygame.K_a] or keys[pygame.K_LEFT])
-        self.basket_x += direction * self.speed * dt
+        self.basket_x += self.controls.move_x * self.speed * dt
         self.basket_x = max(100, min(SCREEN_W - 100, self.basket_x))
         basket = pygame.Rect(int(self.basket_x - 90), 645, 180, 50)
 
