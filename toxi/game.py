@@ -151,7 +151,7 @@ class ToxiGame:
         self.screen.fill(ui.BG)
         title = ui.font(78, True).render("TOXI", True, ui.ACCENT)
         self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 105)))
-        subtitle = ui.font(28, True).render("Toxikologie lernen als 2D-Microgame-Mix", True, ui.TEXT)
+        subtitle = ui.font(28, True).render("Toxikologie spielerisch lernen", True, ui.TEXT)
         self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_W // 2, 165)))
         self._draw_controller_status(205)
 
@@ -172,11 +172,9 @@ class ToxiGame:
             center=True,
         )
 
-        start = ui.font(28, True).render("A / START - starten", True, ui.ACCENT_2)
-        self.screen.blit(start, start.get_rect(center=(SCREEN_W // 2, 565)))
-        controller_help = ui.font(21, True).render("Y - Fortschritt zurücksetzen   |   B - beenden", True, ui.TEXT)
+        controller_help = ui.font(21, True).render("Controller: A / START - starten   |   Y - Reset Progress   |   B - beenden", True, ui.TEXT)
         self.screen.blit(controller_help, controller_help.get_rect(center=(SCREEN_W // 2, 610)))
-        keyboard = ui.font(17).render("Tastatur-Fallback: ENTER/LEERTASTE starten, R reset, ESC zurück", True, ui.MUTED)
+        keyboard = ui.font(17).render("Tastatur: ENTER/LEERTASTE starten, R Reset Progress, ESC beenden", True, ui.MUTED)
         self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 650)))
 
     def _draw_result(self) -> None:
