@@ -18,16 +18,25 @@ class SwordArena(BaseMicrogame):
         self.player = pygame.Vector2(SCREEN_W / 2, 500)
         self.speed = 330
         self.slash_timer = 0.0
+        self.answer_font = ui.font(21, True)
         self.orbs: list[dict] = []
-        starts = [(330, 330), (640, 410), (950, 320)]
+        starts = [(300, 335), (640, 430), (980, 335)]
         random.shuffle(starts)
         for choice, pos in zip(self.choices, starts):
             angle = random.uniform(0, math.tau)
+            radius = ui.adaptive_circle_radius(
+                choice.text,
+                self.answer_font,
+                min_radius=72,
+                max_radius=126,
+                padding=10,
+                line_gap=2,
+            )
             self.orbs.append({
                 "choice": choice,
                 "pos": pygame.Vector2(pos),
                 "vel": pygame.Vector2(math.cos(angle), math.sin(angle)) * random.uniform(65, 105),
-                "radius": 72,
+                "radius": radius,
             })
 
     def _check_slash_hits(self) -> None:
@@ -60,9 +69,6 @@ class SwordArena(BaseMicrogame):
                 orb["vel"].y *= -1
                 orb["pos"].y = max(PLAY_TOP + r, min(SCREEN_H - r, orb["pos"].y))
 
-        # Hit detection stays active for the entire spin animation. This means
-        # either the player or a moving answer orb can enter range after the
-        # attack button was pressed and still be selected by that same slash.
         self._check_slash_hits()
 
     def _draw_player(self) -> None:
@@ -98,13 +104,24 @@ class SwordArena(BaseMicrogame):
         for y in range(PLAY_TOP, SCREEN_H, 80):
             pygame.draw.line(self.screen, (30, 49, 52), (0, y), (SCREEN_W, y), 1)
 
-        answer_font = ui.font(21, True)
         for orb in self.orbs:
             pos = (int(orb["pos"].x), int(orb["pos"].y))
-            pygame.draw.circle(self.screen, (52, 72, 95), pos, orb["radius"])
-            pygame.draw.circle(self.screen, ui.ACCENT_2, pos, orb["radius"], 3)
-            rect = pygame.Rect(pos[0] - 60, pos[1] - 40, 120, 85)
-            ui.draw_wrapped(self.screen, orb["choice"].text, answer_font, ui.TEXT, rect, center=True, line_gap=2)
+            radius = orb["radius"]
+            pygame.draw.circle(self.screen, (52, 72, 95), pos, radius)
+            pygame.draw.circle(self.screen, ui.ACCENT_2, pos, radius, 3)
+            inner = int(radius * 1.4) - 18
+            rect = pygame.Rect(0, 0, inner, inner)
+            rect.center = pos
+            ui.draw_wrapped(
+                self.screen,
+                orb["choice"].text,
+                self.answer_font,
+                ui.TEXT,
+                rect,
+                center=True,
+                line_gap=2,
+                vertical_center=True,
+            )
 
         p = (int(self.player.x), int(self.player.y))
         self._draw_player()
