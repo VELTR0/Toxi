@@ -23,21 +23,65 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
     return pygame.font.Font(None, size)
 
 
+def _split_long_word(word: str, fnt: pygame.font.Font, max_width: int) -> list[str]:
+    """Split a single oversized token so it can never escape its container."""
+    if fnt.size(word)[0] <= max_width:
+        return [word]
+
+    parts: list[str] = []
+    remaining = word
+    while remaining:
+        if fnt.size(remaining)[0] <= max_width:
+            parts.append(remaining)
+            break
+
+        cut = 1
+        last_hyphen = -1
+        for index in range(1, len(remaining) + 1):
+            if fnt.size(remaining[:index])[0] > max_width:
+                break
+            cut = index
+            if remaining[index - 1] == "-":
+                last_hyphen = index
+
+        if last_hyphen > 0:
+            cut = last_hyphen
+        parts.append(remaining[:cut])
+        remaining = remaining[cut:]
+
+    return parts
+
+
 def wrap_text(text: str, fnt: pygame.font.Font, max_width: int) -> list[str]:
     words = text.split()
     if not words:
         return [""]
+
+    max_width = max(1, max_width)
     lines: list[str] = []
-    current = words[0]
-    for word in words[1:]:
-        candidate = f"{current} {word}"
-        if fnt.size(candidate)[0] <= max_width:
-            current = candidate
-        else:
-            lines.append(current)
-            current = word
-    lines.append(current)
-    return lines
+    current = ""
+
+    for word in words:
+        parts = _split_long_word(word, fnt, max_width)
+        for part_index, part in enumerate(parts):
+            candidate = part if not current else f"{current} {part}"
+            if fnt.size(candidate)[0] <= max_width:
+                current = candidate
+            else:
+                if current:
+                    lines.append(current)
+                current = part
+
+            # A split token must continue on the next line. Prefer explicit
+            # hyphen boundaries when available, otherwise fall back to a safe
+            # character split rather than letting text protrude from the shape.
+            if part_index < len(parts) - 1:
+                lines.append(current)
+                current = ""
+
+    if current:
+        lines.append(current)
+    return lines or [""]
 
 
 def measure_wrapped(
@@ -65,12 +109,7 @@ def adaptive_answer_size(
     padding_y: int = 12,
     line_gap: int = 2,
 ) -> tuple[int, int]:
-    """Return a box size that grows with the answer text.
-
-    Short answers stay compact. Long answers grow horizontally up to max_width
-    and then vertically according to the wrapped line count, so text never has
-    to spill outside a fixed-size answer object.
-    """
+    """Return a box size that grows with the answer text."""
     natural_width = fnt.size(text)[0] + padding_x * 2
     width = max(min_width, min(max_width, natural_width))
     _, content_height, _ = measure_wrapped(
@@ -94,8 +133,6 @@ def adaptive_circle_radius(
 ) -> int:
     """Find the smallest circle that comfortably contains wrapped answer text."""
     for radius in range(min_radius, max_radius + 1, 3):
-        # A centered square around 1.4r wide/high sits comfortably inside a
-        # circle while leaving visible breathing room around the text.
         inner = max(40, int(radius * 1.4) - padding * 2)
         content_width, content_height, _ = measure_wrapped(
             text,
