@@ -17,7 +17,7 @@ Aktuell enthaltene Microgame-Typen:
 2. **Labyrinth-Portale** - im Top-down-Labor zum richtigen Antwortportal laufen.
 3. **Platform Gates** - kleiner One-Screen-Platformer; die richtige Antworttür erreichen.
 4. **Lab Catcher** - die richtige Antwortkapsel mit einem Fangkorb erwischen.
-5. **Comet Click** - den richtigen DNA-Kometen anklicken.
+5. **Comet Click** - einen DNA-Kometen auswählen und bestätigen; Maus bleibt optional.
 
 Die Fragen sind aus den im Projekt bereitgestellten Toxikologie-Notizen abgeleitet. Im Ergebnisbildschirm wird die zugehörige PDF-Seite angezeigt.
 
@@ -41,13 +41,35 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## Steuerung
+## Controller-Steuerung
+
+Das komplette Spiel ist ohne Maus und Tastatur spielbar. Toxi nutzt Pygames SDL-Controller-Schicht und zeigt im Hauptmenü den erkannten Controller an.
+
+- **Linker Stick / D-Pad**: bewegen bzw. Auswahl ändern
+- **A**: bestätigen / springen / Hauptaktion
+- **X**: alternative Hauptaktion, z. B. Schwertschlag oder Sprung
+- **B**: zurück zum Menü / beenden
+- **START**: im Hauptmenü ebenfalls starten
+- **Y**: Lernfortschritt zurücksetzen
+
+Microgame-spezifisch:
+
+- **Sword Arena**: Stick/D-Pad bewegen, A oder X schlagen
+- **Labyrinth-Portale**: Stick/D-Pad bewegen und ins richtige Portal laufen
+- **Platform Gates**: Stick/D-Pad laufen, A oder X springen
+- **Lab Catcher**: Stick/D-Pad links/rechts bewegen
+- **Comet Click**: Stick/D-Pad zwischen Kometen wechseln, A bestätigen
+
+Der Controller kann auch nach dem Start des Spiels angeschlossen werden; Toxi sucht automatisch erneut nach einem Gamepad. Bei richtigen bzw. falschen Antworten wird, sofern unterstützt, kurzes Rumble-Feedback ausgelöst.
+
+### Tastatur-/Maus-Fallback
 
 - `WASD` oder Pfeiltasten: bewegen
-- `LEERTASTE`: springen / Schwertschlag (abhängig vom Microgame)
-- Maus: Comet-Click
-- `ESC`: zum Menü bzw. beenden
-- `R` im Menü: gespeicherten Lernfortschritt zurücksetzen
+- `LEERTASTE`: springen / Schwertschlag
+- `ENTER` / `LEERTASTE`: bestätigen
+- Maus: optional bei Comet Click
+- `ESC`: zurück / beenden
+- `R`: Fortschritt zurücksetzen
 
 ## Fortschritt
 
@@ -83,7 +105,8 @@ requirements.txt
 toxi/
   data.py          # Fragen + zwei Levelzuordnungen je Frage
   game.py          # Szenenwechsel, Score, Lernlogik
-  microgames.py    # alle Microgame-Klassen
+  input.py         # Controller- und Tastatur-Abstraktion
+  microgames/      # einzelne 2D-Microgames
   progress.py      # persistenter Lernfortschritt
   ui.py            # Fonts, Panels, Text-Wrapping
 ```
