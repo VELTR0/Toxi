@@ -12,6 +12,7 @@ def validate_questions() -> None:
         "lab_catcher",
         "comet_click",
         "pokemon_battle",
+        "sole_man",
     }
     for q in QUESTIONS:
         assert q["id"] not in ids, f"duplicate question id: {q['id']}"
