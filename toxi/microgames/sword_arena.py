@@ -10,6 +10,7 @@ from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
 class SwordArena(BaseMicrogame):
     instruction = "Controller: Stick/D-Pad bewegen, A/X schlagen | Tastatur: WASD/Pfeile + Leertaste"
+    task_prompt = "Zerschneide die Blase!"
     SLASH_DURATION = 0.18
     SLASH_ROTATIONS = 2
 
