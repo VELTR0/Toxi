@@ -203,7 +203,6 @@ class ToxiGame:
         self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 105)))
         subtitle = ui.font(28, True).render("Toxikologie spielerisch lernen", True, ui.TEXT)
         self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_W // 2, 165)))
-        self._draw_controller_status(205)
 
         learned = self.progress.learned_count()
         total = len(QUESTIONS)
