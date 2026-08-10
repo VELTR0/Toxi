@@ -23,6 +23,19 @@ class BaseMicrogame:
     instruction = ""
     task_prompt = "Wähle die richtige Antwort!"
 
+    # Every microgame gets a short, gameplay-focused instruction directly below
+    # the question. Keeping the text here guarantees that no current game can
+    # accidentally omit the shared task field.
+    TASK_PROMPTS = {
+        "SoleMan": "Zerstampfe die Antwort!",
+        "PokemonBattle": "Welche Attacke setzt du ein?",
+        "SwordArena": "Zerschneide die Blase!",
+        "MazePortals": "Erreiche die Antwort!",
+        "PlatformGates": "Springe zur Antwort!",
+        "LabCatcher": "Fange die Antwort!",
+        "CometClick": "Finde den richtigen Kometen!",
+    }
+
     def __init__(
         self,
         screen: pygame.Surface,
@@ -52,12 +65,13 @@ class BaseMicrogame:
         pass
 
     def draw_common(self) -> None:
+        prompt = self.TASK_PROMPTS.get(type(self).__name__, self.task_prompt)
         ui.draw_question_header(
             self.screen,
             self.question,
             self.score,
             self.mastery,
-            self.task_prompt,
+            prompt,
         )
 
     def draw(self) -> None:
