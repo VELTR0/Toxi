@@ -158,6 +158,20 @@ class SoleMan(BaseMicrogame):
             line_gap=2,
         )
 
+    def _draw_prompt(self) -> None:
+        panel = pygame.Rect(30, 205, 330, 62)
+        ui.draw_panel(self.screen, panel, color=(37, 44, 62), radius=14)
+        ui.draw_wrapped(
+            self.screen,
+            "Zerstampfe die Antwort!",
+            ui.font(21, True),
+            ui.TEXT,
+            panel.inflate(-18, -10),
+            center=True,
+            vertical_center=True,
+            line_gap=2,
+        )
+
     def draw(self) -> None:
         self.screen.fill((19, 22, 35))
         self.draw_common()
@@ -167,6 +181,8 @@ class SoleMan(BaseMicrogame):
         pygame.draw.rect(self.screen, (47, 52, 67), pygame.Rect(0, 655, SCREEN_W, 65))
         for x in range(0, SCREEN_W, 96):
             pygame.draw.line(self.screen, (55, 62, 78), (x, 655), (x + 42, SCREEN_H), 2)
+
+        self._draw_prompt()
 
         for index, (choice, rect) in enumerate(self.answers):
             self._draw_answer(index, choice, rect)
