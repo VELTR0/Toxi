@@ -21,6 +21,7 @@ class AnswerChoice:
 
 class BaseMicrogame:
     instruction = ""
+    task_prompt = "Wähle die richtige Antwort!"
 
     def __init__(
         self,
@@ -51,7 +52,13 @@ class BaseMicrogame:
         pass
 
     def draw_common(self) -> None:
-        ui.draw_question_header(self.screen, self.question, self.score, self.mastery)
+        ui.draw_question_header(
+            self.screen,
+            self.question,
+            self.score,
+            self.mastery,
+            self.task_prompt,
+        )
 
     def draw(self) -> None:
         raise NotImplementedError
