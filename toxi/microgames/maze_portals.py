@@ -16,11 +16,7 @@ class MazePortals(BaseMicrogame):
         self.speed = 310
         self.size = 34
         self.answer_font = ui.font(20, True)
-        self.walls = [
-            pygame.Rect(210, 350, 350, 28),
-            pygame.Rect(720, 350, 350, 28),
-            pygame.Rect(460, 500, 360, 28),
-        ]
+
         centers = [215, 640, 1065]
         self.portals = []
         for choice, center_x in zip(self.choices, centers):
@@ -37,6 +33,48 @@ class MazePortals(BaseMicrogame):
             portal = pygame.Rect(0, 0, width, height)
             portal.midtop = (center_x, 205)
             self.portals.append((choice, portal))
+
+        self.walls = self._generate_walls()
+
+    def _generate_walls(self) -> list[pygame.Rect]:
+        """Create a fresh, guaranteed-solvable maze for every round.
+
+        The maze consists of several full-width barrier rows with one generous
+        opening in each row. The openings wander left and right as the player
+        moves upward, producing a different zig-zag route every time while
+        always preserving a path from the spawn area to all three portals.
+        """
+        walls: list[pygame.Rect] = []
+        thickness = random.randint(24, 30)
+
+        # Portal boxes can extend down to roughly y=330. Keeping the highest
+        # barrier below that leaves the whole answer row freely reachable once
+        # the player has crossed the maze.
+        row_count = random.choice((3, 4))
+        row_bases = [360, 435, 510, 585]
+        if row_count == 3:
+            row_bases = random.sample(row_bases, 3)
+        row_ys = sorted(base + random.randint(-10, 10) for base in row_bases)
+
+        gap_center = random.randint(250, SCREEN_W - 250)
+        for y in row_ys:
+            gap_width = random.randint(185, 245)
+
+            # Make the route meander, but do not teleport the next opening to
+            # the opposite side of the screen. This keeps the maze readable and
+            # avoids long empty traversals between neighboring rows.
+            gap_center += random.randint(-285, 285)
+            gap_center = max(gap_width // 2 + 70, min(SCREEN_W - gap_width // 2 - 70, gap_center))
+
+            gap_left = int(gap_center - gap_width / 2)
+            gap_right = int(gap_center + gap_width / 2)
+
+            if gap_left > 0:
+                walls.append(pygame.Rect(0, y, gap_left, thickness))
+            if gap_right < SCREEN_W:
+                walls.append(pygame.Rect(gap_right, y, SCREEN_W - gap_right, thickness))
+
+        return walls
 
     def _move_axis(self, delta: pygame.Vector2) -> None:
         if delta.x:
