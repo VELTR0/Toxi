@@ -16,6 +16,7 @@ class PokemonBattle(BaseMicrogame):
     lunges forward, and either defeats the question or gets counter-attacked.
     """
 
+    PLAYER_ATTACK_ANNOUNCE_TIME = 1.5
     PLAYER_ATTACK_TIME = 0.36
     RESULT_ANNOUNCE_TIME = 1.5
     ENEMY_ATTACK_TIME = 0.36
@@ -56,8 +57,10 @@ class PokemonBattle(BaseMicrogame):
             return
         self.chosen = self.choices[self.selected]
         self.chosen_correct = self.chosen.original_index == self.question["correct"]
-        self.phase = "player_attack"
-        self.phase_timer = self.PLAYER_ATTACK_TIME
+        # First announce the selected attack while both combatants stay still.
+        # Only after 1.5 seconds does the actual player lunge animation begin.
+        self.phase = "announce_player_attack"
+        self.phase_timer = self.PLAYER_ATTACK_ANNOUNCE_TIME
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.phase != "select" or self.done:
@@ -84,7 +87,10 @@ class PokemonBattle(BaseMicrogame):
         if self.phase_timer > 0.0:
             return
 
-        if self.phase == "player_attack":
+        if self.phase == "announce_player_attack":
+            self.phase = "player_attack"
+            self.phase_timer = self.PLAYER_ATTACK_TIME
+        elif self.phase == "player_attack":
             # Reveal the result in the text box first. The combatants stay still
             # for 1.5 seconds so the player can read what is about to happen.
             if self.chosen_correct:
@@ -166,7 +172,7 @@ class PokemonBattle(BaseMicrogame):
         ui.draw_panel(self.screen, panel, color=(32, 39, 56), radius=14)
         if self.phase == "select":
             text = "Welche Attacke setzt du ein?"
-        elif self.phase == "player_attack":
+        elif self.phase in ("announce_player_attack", "player_attack"):
             text = f"TOXI setzt {self.chosen.text} ein!"
         elif self.phase in ("announce_enemy_defeat", "enemy_defeat"):
             text = "Volltreffer! Die Frage wurde besiegt."
