@@ -9,6 +9,7 @@ from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
 class MazePortals(BaseMicrogame):
     instruction = "Controller: Stick/D-Pad durch das Labor | Tastatur: WASD/Pfeile | Betritt das richtige Portal"
+    task_prompt = "Finde das richtige Portal!"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
