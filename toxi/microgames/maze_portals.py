@@ -37,35 +37,38 @@ class MazePortals(BaseMicrogame):
         self.walls = self._generate_walls()
 
     def _generate_walls(self) -> list[pygame.Rect]:
-        """Create a fresh, guaranteed-solvable maze for every round.
+        """Create three randomized, guaranteed-solvable barrier rows.
 
-        The maze consists of several full-width barrier rows with one generous
-        opening in each row. The openings wander left and right as the player
-        moves upward, producing a different zig-zag route every time while
-        always preserving a path from the spawn area to all three portals.
+        Each horizontal row has one generous opening. The gap positions are
+        chosen almost independently across the full arena and are encouraged to
+        be far apart, producing much stronger left/right variation between rows.
         """
         walls: list[pygame.Rect] = []
         thickness = random.randint(24, 30)
 
-        # Portal boxes can extend down to roughly y=330. Keeping the highest
-        # barrier below that leaves the whole answer row freely reachable once
-        # the player has crossed the maze.
-        row_count = random.choice((3, 4))
-        row_bases = [360, 435, 510, 585]
-        if row_count == 3:
-            row_bases = random.sample(row_bases, 3)
-        row_ys = sorted(base + random.randint(-10, 10) for base in row_bases)
+        # Exactly three rows. The former highest/fourth layer was removed so the
+        # area below the three answer portals stays more open.
+        row_bases = [430, 510, 590]
+        row_ys = sorted(base + random.randint(-12, 12) for base in row_bases)
 
-        gap_center = random.randint(250, SCREEN_W - 250)
+        previous_center: int | None = None
         for y in row_ys:
-            gap_width = random.randint(185, 245)
+            gap_width = random.randint(175, 235)
+            margin = gap_width // 2 + 55
 
-            # Make the route meander, but do not teleport the next opening to
-            # the opposite side of the screen. This keeps the maze readable and
-            # avoids long empty traversals between neighboring rows.
-            gap_center += random.randint(-285, 285)
-            gap_center = max(gap_width // 2 + 70, min(SCREEN_W - gap_width // 2 - 70, gap_center))
+            # Pick each opening from almost the whole screen. If possible, keep
+            # it well away from the previous opening so successive passages do
+            # not keep clustering in the same area.
+            gap_center = random.randint(margin, SCREEN_W - margin)
+            if previous_center is not None:
+                for _ in range(12):
+                    candidate = random.randint(margin, SCREEN_W - margin)
+                    if abs(candidate - previous_center) >= 300:
+                        gap_center = candidate
+                        break
+                    gap_center = candidate
 
+            previous_center = gap_center
             gap_left = int(gap_center - gap_width / 2)
             gap_right = int(gap_center + gap_width / 2)
 
