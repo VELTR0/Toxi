@@ -20,6 +20,7 @@ Aktuell enthaltene Microgame-Typen:
 4. **Lab Catcher** - die richtige Antwortkapsel mit einem Fangkorb erwischen.
 5. **Comet Click** - einen DNA-Kometen auswählen und bestätigen; Maus bleibt optional.
 6. **Battle** - retro Monsterkampf-Stil: die drei Antworten sind Attacken. Bei einer richtigen Attacke wird die Frage besiegt; bei einer falschen kontert die Frage und besiegt den Spieler.
+7. **Sole Man** - einen schwebenden Fuß links/rechts ausrichten und die gewählte Antwort mit einem schnellen Stampfer zerdrücken.
 
 Die Fragen sind aus den im Projekt bereitgestellten Toxikologie-Notizen abgeleitet. Im Ergebnisbildschirm wird die zugehörige PDF-Seite angezeigt.
 
@@ -48,7 +49,7 @@ python main.py
 Ein bestimmtes Microgame kann direkt gestartet werden, ohne den Lernfortschritt, Score oder die Versuche zu verändern:
 
 ```powershell
-python main.py --debug-microgame pokemon_battle
+python main.py --debug-microgame sole_man
 ```
 
 Verfügbare Namen:
@@ -60,12 +61,13 @@ platform_gates
 lab_catcher
 comet_click
 pokemon_battle
+sole_man
 ```
 
 Standardmäßig wird dabei bei jedem Durchlauf eine zufällige Frage verwendet. Optional kann zusätzlich eine konkrete Frage-ID festgelegt werden:
 
 ```powershell
-python main.py --debug-microgame platform_gates --debug-question pseudoallergy
+python main.py --debug-microgame sole_man --debug-question toxicokinetics_definition
 ```
 
 Nach dem Ergebnis startet `A` / `ENTER` dasselbe Debug-Microgame erneut. `B` / `ESC` führt zurück ins Hauptmenü.
@@ -89,13 +91,14 @@ Microgame-spezifisch:
 - **Lab Catcher**: Stick/D-Pad links/rechts bewegen
 - **Comet Click**: Stick/D-Pad zwischen Kometen wechseln, A bestätigen
 - **Battle**: Stick/D-Pad zwischen Attacken wechseln, A bestätigen
+- **Sole Man**: Stick/D-Pad links/rechts bewegen, A oder X stampfen
 
 Der Controller kann auch nach dem Start des Spiels angeschlossen werden; Toxi sucht automatisch erneut nach einem Gamepad. Bei richtigen bzw. falschen Antworten wird, sofern unterstützt, kurzes Rumble-Feedback ausgelöst.
 
 ### Tastatur-/Maus-Fallback
 
 - `WASD` oder Pfeiltasten: bewegen
-- `LEERTASTE`: springen / Schwertschlag / bestätigen
+- `LEERTASTE`: springen / Schwertschlag / stampfen / bestätigen
 - `ENTER` / `LEERTASTE`: bestätigen
 - Maus: optional bei Comet Click und Battle
 - `ESC`: zurück / beenden
