@@ -201,7 +201,7 @@ class ToxiGame:
         self.screen.fill(ui.BG)
         title = ui.font(78, True).render("TOXI", True, ui.ACCENT)
         self.screen.blit(title, title.get_rect(center=(SCREEN_W // 2, 105)))
-        subtitle = ui.font(28, True).render("Toxikologie spielerisch lernen", True, ui.TEXT)
+        subtitle = ui.font(28, True).render("Wer über's Script lernt ist blöd", True, ui.TEXT)
         self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_W // 2, 165)))
 
         learned = self.progress.learned_count()
@@ -214,7 +214,7 @@ class ToxiGame:
         self.screen.blit(big.render(f"Gelernt: {learned}/{total} Fragen", True, ui.ACCENT), (300, 325))
         ui.draw_wrapped(
             self.screen,
-            "Jede Frage hat zwei abwechselnde Microgame-Level. Ein Sieg gibt der Frage +1 Lernpunkt. Bei 3/3 erscheint sie nicht mehr.",
+            "",
             normal,
             ui.TEXT,
             pygame.Rect(300, 385, 680, 100),
