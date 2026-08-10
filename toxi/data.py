@@ -5,7 +5,14 @@ from .questions import QUESTIONS
 
 def validate_questions() -> None:
     ids = set()
-    allowed = {"sword_arena", "maze_portals", "platform_gates", "lab_catcher", "comet_click"}
+    allowed = {
+        "sword_arena",
+        "maze_portals",
+        "platform_gates",
+        "lab_catcher",
+        "comet_click",
+        "pokemon_battle",
+    }
     for q in QUESTIONS:
         assert q["id"] not in ids, f"duplicate question id: {q['id']}"
         ids.add(q["id"])
