@@ -28,7 +28,7 @@ class BaseMicrogame:
     # accidentally omit the shared task field.
     TASK_PROMPTS = {
         "SoleMan": "Zerstampfe die Antwort!",
-        "PokemonBattle": "Welche Attacke setzt du ein?",
+        "PokemonBattle": "",
         "SwordArena": "Zerschneide die Blase!",
         "MazePortals": "Erreiche die Antwort!",
         "PlatformGates": "Springe zur Antwort!",

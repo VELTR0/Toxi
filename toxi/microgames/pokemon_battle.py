@@ -155,7 +155,7 @@ class PokemonBattle(BaseMicrogame):
         pygame.draw.circle(self.screen, ui.TEXT, (x + 17, y - 8), 6)
         pygame.draw.arc(self.screen, ui.TEXT, pygame.Rect(x - 22, y - 4, 44, 34), math.pi + 0.1, math.pi * 2 - 0.1, 4)
         badge = ui.font(18, True).render("Du", True, ui.GOLD)
-        self.screen.blit(badge, badge.get_rect(center=(x, y - 40)))
+        self.screen.blit(badge, badge.get_rect(center=(x, y + 40)))
 
     def _draw_enemy(self, pos: pygame.Vector2) -> None:
         x, y = int(pos.x), int(pos.y)
@@ -171,7 +171,7 @@ class PokemonBattle(BaseMicrogame):
         panel = pygame.Rect(410, 465, 455, 95)
         ui.draw_panel(self.screen, panel, color=(32, 39, 56), radius=14)
         if self.phase == "select":
-            text = "Welche Attacke setzt du ein?"
+            text = "Wähle eine Attacke!"
         elif self.phase in ("announce_player_attack", "player_attack"):
             text = f"TOXI setzt {self.chosen.text} ein!"
         elif self.phase in ("announce_enemy_defeat", "enemy_defeat"):
