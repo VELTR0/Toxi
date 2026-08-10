@@ -19,6 +19,7 @@ class PokemonBattle(BaseMicrogame):
     PLAYER_ATTACK_TIME = 0.36
     ENEMY_ATTACK_TIME = 0.36
     DEFEAT_TIME = 1.05
+    GROUND_Y = 455
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -45,7 +46,7 @@ class PokemonBattle(BaseMicrogame):
                 padding_y=12,
                 line_gap=2,
             )
-            rect = pygame.Rect(0, 0, width, min(height, 120))
+            rect = pygame.Rect(0, 0, width, height)
             rect.midbottom = (center_x, 695)
             self.attack_rects.append(rect)
 
@@ -102,7 +103,6 @@ class PokemonBattle(BaseMicrogame):
     @staticmethod
     def _lunge_offset(timer: float, duration: float, direction: float) -> float:
         progress = 1.0 - timer / duration
-        # Smooth out-and-back punch movement.
         return math.sin(progress * math.pi) * 82.0 * direction
 
     @staticmethod
@@ -183,12 +183,19 @@ class PokemonBattle(BaseMicrogame):
 
         arena = pygame.Rect(0, PLAY_TOP, SCREEN_W, SCREEN_H - PLAY_TOP)
         pygame.draw.rect(self.screen, (34, 52, 66), arena)
-        pygame.draw.rect(self.screen, (51, 76, 72), pygame.Rect(0, 455, SCREEN_W, 265))
+        pygame.draw.rect(self.screen, (51, 76, 72), pygame.Rect(0, self.GROUND_Y, SCREEN_W, SCREEN_H - self.GROUND_Y))
         for x in range(0, SCREEN_W, 80):
-            pygame.draw.line(self.screen, (56, 83, 78), (x, 455), (x + 140, SCREEN_H), 2)
+            pygame.draw.line(self.screen, (56, 83, 78), (x, self.GROUND_Y), (x + 140, SCREEN_H), 2)
 
+        # Clip the combatants at the ground line. During defeat they shake and
+        # move downward, so the ground progressively hides them instead of the
+        # sprite simply sliding across the foreground.
+        old_clip = self.screen.get_clip()
+        self.screen.set_clip(pygame.Rect(0, PLAY_TOP, SCREEN_W, self.GROUND_Y - PLAY_TOP))
         self._draw_player(self._player_position())
         self._draw_enemy(self._enemy_position())
+        self.screen.set_clip(old_clip)
+
         self._draw_status_panel()
 
         for index, (choice, rect) in enumerate(zip(self.choices, self.attack_rects)):
