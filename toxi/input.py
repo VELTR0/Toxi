@@ -148,9 +148,9 @@ class Controls:
         back_button = self._button("CONTROLLER_BUTTON_BACK", 4)
 
         current = {
-            "confirm": bool(keys[pygame.K_RETURN] or keys[pygame.K_SPACE]) or a or start,
-            "action": bool(keys[pygame.K_SPACE]) or a or x,
-            "back": bool(keys[pygame.K_ESCAPE]) or b or back_button,
+            "confirm": bool(keys[pygame.K_RETURN] or keys[pygame.K_SPACE]) or b or start,
+            "action": bool(keys[pygame.K_SPACE]) or b or x,
+            "back": bool(keys[pygame.K_ESCAPE]) or a or back_button,
             "reset": bool(keys[pygame.K_r]) or y,
             "left": left,
             "right": right,
