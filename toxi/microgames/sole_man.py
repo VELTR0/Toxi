@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import pygame
 
@@ -9,7 +10,7 @@ from .base import BaseMicrogame, PLAY_TOP, SCREEN_H, SCREEN_W
 
 
 class SoleMan(BaseMicrogame):
-    """Move a simple two-rectangle foot and stomp the chosen answer."""
+    """Move the leg sprite horizontally and stomp the chosen answer."""
 
     MOVE_SPEED = 520
     STOMP_DOWN_TIME = 0.16
@@ -17,15 +18,16 @@ class SoleMan(BaseMicrogame):
     RETURN_TIME = 0.24
     STOMP_DISTANCE = 255
 
-    LEG_W = 58
-    LEG_H = 104
-    SOLE_W = 132
-    SOLE_H = 46
+    FOOT_MAX_W = 220
+    FOOT_MAX_H = 250
+    SOLE_HITBOX_HEIGHT_RATIO = 0.28
+    SOLE_HITBOX_WIDTH_RATIO = 0.86
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.foot_sprite = self._load_foot_sprite()
         self.foot_x = SCREEN_W / 2
-        self.hover_y = 235.0
+        self.hover_y = 205.0
         self.phase = "hover"
         self.phase_timer = 0.0
         self.impact_offset = 0.0
@@ -50,6 +52,14 @@ class SoleMan(BaseMicrogame):
             rect.midbottom = (center_x, 655)
             self.answers.append((choice, rect))
 
+    def _load_foot_sprite(self) -> pygame.Surface:
+        asset_path = Path(__file__).resolve().parents[2] / "ressources" / "sprites" / "leg.png"
+        image = pygame.image.load(str(asset_path)).convert_alpha()
+        width, height = image.get_size()
+        scale = min(self.FOOT_MAX_W / width, self.FOOT_MAX_H / height)
+        target_size = (max(1, int(width * scale)), max(1, int(height * scale)))
+        return pygame.transform.smoothscale(image, target_size)
+
     def _stomp_offset(self) -> float:
         if self.phase == "stomp_down":
             progress = 1.0 - self.phase_timer / self.STOMP_DOWN_TIME
@@ -62,16 +72,20 @@ class SoleMan(BaseMicrogame):
             return self.impact_offset * (1.0 - progress)
         return 0.0
 
-    def _foot_rects(self, offset: float | None = None) -> tuple[pygame.Rect, pygame.Rect]:
+    def _foot_rect(self, offset: float | None = None) -> pygame.Rect:
         if offset is None:
             offset = self._stomp_offset()
-        y = int(self.hover_y + offset)
-        x = int(self.foot_x)
-        leg = pygame.Rect(0, 0, self.LEG_W, self.LEG_H)
-        leg.midtop = (x, y)
-        sole = pygame.Rect(0, 0, self.SOLE_W, self.SOLE_H)
-        sole.midtop = (x, y + self.LEG_H - 18)
-        return leg, sole
+        rect = self.foot_sprite.get_rect()
+        rect.midtop = (int(self.foot_x), int(self.hover_y + offset))
+        return rect
+
+    def _sole_hitbox(self, offset: float | None = None) -> pygame.Rect:
+        sprite_rect = self._foot_rect(offset)
+        width = max(60, int(sprite_rect.width * self.SOLE_HITBOX_WIDTH_RATIO))
+        height = max(26, int(sprite_rect.height * self.SOLE_HITBOX_HEIGHT_RATIO))
+        hitbox = pygame.Rect(0, 0, width, height)
+        hitbox.midbottom = sprite_rect.midbottom
+        return hitbox
 
     def _begin_stomp(self) -> None:
         if self.phase != "hover" or self.done:
@@ -85,22 +99,29 @@ class SoleMan(BaseMicrogame):
     def update(self, dt: float) -> None:
         if self.phase == "hover":
             self.foot_x += self.controls.move_x * self.MOVE_SPEED * dt
-            half = self.SOLE_W / 2 + 8
+            half = self.foot_sprite.get_width() / 2 + 8
             self.foot_x = max(half, min(SCREEN_W - half, self.foot_x))
             if self.controls.pressed("action") or self.controls.pressed("confirm"):
                 self._begin_stomp()
             return
 
+        previous_offset = self._stomp_offset()
         self.phase_timer = max(0.0, self.phase_timer - dt)
 
         if self.phase == "stomp_down":
             offset = self._stomp_offset()
-            _, sole = self._foot_rects(offset)
+            previous_sole = self._sole_hitbox(previous_offset)
+            sole = self._sole_hitbox(offset)
+            swept_sole = previous_sole.union(sole)
+
             for index, (choice, rect) in enumerate(self.answers):
-                if sole.colliderect(rect):
+                if swept_sole.colliderect(rect):
+                    # Pull the sprite back by any frame-to-frame overshoot so it
+                    # visually lands on the answer instead of passing through it.
+                    overshoot = max(0, sole.bottom - rect.top)
+                    self.impact_offset = max(0.0, offset - overshoot + 8)
                     self.crushed_choice = choice
                     self.crushed_index = index
-                    self.impact_offset = offset
                     self.phase = "crush"
                     self.phase_timer = self.CRUSH_TIME
                     return
@@ -187,22 +208,8 @@ class SoleMan(BaseMicrogame):
         for index, (choice, rect) in enumerate(self.answers):
             self._draw_answer(index, choice, rect)
 
-        leg, sole = self._foot_rects()
-        pygame.draw.rect(self.screen, (236, 184, 135), leg, border_radius=16)
-        pygame.draw.rect(self.screen, (255, 213, 164), sole, border_radius=18)
-        pygame.draw.rect(self.screen, ui.TEXT, leg, 3, border_radius=16)
-        pygame.draw.rect(self.screen, ui.TEXT, sole, 3, border_radius=18)
-
-        # A few toe marks keep the two-rectangle foot readable without sprites.
-        for i in range(4):
-            toe_x = sole.left + 22 + i * 24
-            pygame.draw.line(
-                self.screen,
-                (188, 135, 106),
-                (toe_x, sole.top + 8),
-                (toe_x + 8, sole.top + 15),
-                3,
-            )
+        foot_rect = self._foot_rect()
+        self.screen.blit(self.foot_sprite, foot_rect)
 
         if self.phase == "crush":
             progress = 1.0 - self.phase_timer / self.CRUSH_TIME
@@ -210,4 +217,5 @@ class SoleMan(BaseMicrogame):
             alpha = max(0, 170 - int(progress * 170))
             dust = pygame.Surface((radius * 2 + 8, radius * 2 + 8), pygame.SRCALPHA)
             pygame.draw.circle(dust, (214, 197, 166, alpha), (radius + 4, radius + 4), radius, 3)
+            sole = self._sole_hitbox()
             self.screen.blit(dust, dust.get_rect(center=(sole.centerx, sole.bottom - 4)))
