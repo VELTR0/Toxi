@@ -34,6 +34,7 @@ class BaseMicrogame:
         "PlatformGates": "Springe zur Antwort!",
         "LabCatcher": "Fange die Antwort!",
         "CometClick": "Finde den richtigen Kometen!",
+        "QuickDraw": "Schieße auf die richtige Antwort!",
     }
 
     def __init__(
