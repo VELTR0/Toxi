@@ -63,7 +63,6 @@ class SoleMan(BaseMicrogame):
     def _stomp_offset(self) -> float:
         if self.phase == "stomp_down":
             progress = 1.0 - self.phase_timer / self.STOMP_DOWN_TIME
-            # Fast initial drop, then a tiny ease into the target.
             return self.STOMP_DISTANCE * math.sqrt(max(0.0, min(1.0, progress)))
         if self.phase == "crush":
             return self.impact_offset
@@ -116,8 +115,6 @@ class SoleMan(BaseMicrogame):
 
             for index, (choice, rect) in enumerate(self.answers):
                 if swept_sole.colliderect(rect):
-                    # Pull the sprite back by any frame-to-frame overshoot so it
-                    # visually lands on the answer instead of passing through it.
                     overshoot = max(0, sole.bottom - rect.top)
                     self.impact_offset = max(0.0, offset - overshoot + 8)
                     self.crushed_choice = choice
@@ -127,8 +124,6 @@ class SoleMan(BaseMicrogame):
                     return
 
             if self.phase_timer <= 0.0:
-                # A stomp between answers is a harmless miss. Return to the
-                # hover position so the player can aim again.
                 self.impact_offset = self.STOMP_DISTANCE
                 self.phase = "return"
                 self.phase_timer = self.RETURN_TIME
@@ -179,20 +174,6 @@ class SoleMan(BaseMicrogame):
             line_gap=2,
         )
 
-    def _draw_prompt(self) -> None:
-        panel = pygame.Rect(30, 205, 330, 62)
-        ui.draw_panel(self.screen, panel, color=(37, 44, 62), radius=14)
-        ui.draw_wrapped(
-            self.screen,
-            "Zerstampfe die Antwort!",
-            ui.font(21, True),
-            ui.TEXT,
-            panel.inflate(-18, -10),
-            center=True,
-            vertical_center=True,
-            line_gap=2,
-        )
-
     def draw(self) -> None:
         self.screen.fill((19, 22, 35))
         self.draw_common()
@@ -202,8 +183,6 @@ class SoleMan(BaseMicrogame):
         pygame.draw.rect(self.screen, (47, 52, 67), pygame.Rect(0, 655, SCREEN_W, 65))
         for x in range(0, SCREEN_W, 96):
             pygame.draw.line(self.screen, (55, 62, 78), (x, 655), (x + 42, SCREEN_H), 2)
-
-        self._draw_prompt()
 
         for index, (choice, rect) in enumerate(self.answers):
             self._draw_answer(index, choice, rect)
