@@ -179,7 +179,7 @@ def draw_question_header(
     mastery: int,
     task_prompt: str = "Wähle die richtige Antwort!",
 ) -> None:
-    """Draw the shared question header and a compact task field below it."""
+    """Draw the shared question header and an optional compact task field below it."""
     panel = pygame.Rect(30, 24, surface.get_width() - 60, 150)
     draw_panel(surface, panel)
     small = font(20, True)
@@ -206,6 +206,11 @@ def draw_question_header(
         vertical_center=True,
         line_gap=3,
     )
+
+    # An empty task prompt deliberately disables the task field for that
+    # microgame instead of rendering an empty bordered box.
+    if not task_prompt.strip():
+        return
 
     prompt_font = font(17, True)
     prompt_width = min(520, max(250, prompt_font.size(task_prompt)[0] + 42))
