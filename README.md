@@ -10,6 +10,7 @@ Ein kleines 2D-Lernspiel für Toxikologie mit zufälligen Microgames im Stil ein
 - Jede richtige Lösung erhöht zusätzlich den **Global Score**.
 - Sobald alle Fragen 3/3 erreicht haben, erscheint der Finished-Screen.
 - Fortschritt wird lokal gespeichert und bleibt zwischen Starts erhalten.
+- Bei der Zufallsauswahl wird zuerst gleichverteilt zwischen den aktuell verfügbaren nächsten Microgame-Typen gewählt und danach eine passende Frage gezogen. Dadurch dominiert kein Microgame nur deshalb, weil es mehr Fragen zugeordnet bekommen hat.
 
 Aktuell enthaltene Microgame-Typen:
 
@@ -41,6 +42,33 @@ py -m venv .venv
 pip install -r requirements.txt
 python main.py
 ```
+
+## Microgame gezielt debuggen
+
+Ein bestimmtes Microgame kann direkt gestartet werden, ohne den Lernfortschritt, Score oder die Versuche zu verändern:
+
+```powershell
+python main.py --debug-microgame pokemon_battle
+```
+
+Verfügbare Namen:
+
+```text
+sword_arena
+maze_portals
+platform_gates
+lab_catcher
+comet_click
+pokemon_battle
+```
+
+Standardmäßig wird dabei bei jedem Durchlauf eine zufällige Frage verwendet. Optional kann zusätzlich eine konkrete Frage-ID festgelegt werden:
+
+```powershell
+python main.py --debug-microgame platform_gates --debug-question pseudoallergy
+```
+
+Nach dem Ergebnis startet `A` / `ENTER` dasselbe Debug-Microgame erneut. `B` / `ESC` führt zurück ins Hauptmenü.
 
 ## Controller-Steuerung
 

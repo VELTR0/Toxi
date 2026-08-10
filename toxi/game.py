@@ -12,7 +12,12 @@ from .progress import MASTERY_TARGET, ProgressStore
 
 
 class ToxiGame:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        debug_microgame: str | None = None,
+        debug_question_id: str | None = None,
+    ) -> None:
         pygame.init()
         pygame.display.set_caption("Toxi - Toxicology Microgames")
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
@@ -21,12 +26,26 @@ class ToxiGame:
         self.controls = Controls()
         self.question_by_id = {q["id"]: q for q in QUESTIONS}
         self.progress = ProgressStore(list(self.question_by_id))
+
+        if debug_microgame is not None and debug_microgame not in MICROGAME_TYPES:
+            raise ValueError(f"Unbekanntes Microgame: {debug_microgame}")
+        if debug_question_id is not None and debug_question_id not in self.question_by_id:
+            raise ValueError(f"Unbekannte Frage-ID: {debug_question_id}")
+        if debug_question_id is not None and debug_microgame is None:
+            raise ValueError("--debug-question benötigt --debug-microgame")
+
+        self.debug_microgame = debug_microgame
+        self.debug_question_id = debug_question_id
+
         self.state = "menu"
         self.current_question: dict | None = None
         self.current_microgame = None
         self.last_correct = False
         self.last_became_learned = False
         self.last_mastery_before = 0
+
+        if self.debug_microgame:
+            self._start_debug_round()
 
     def run(self) -> None:
         while self.running:
@@ -39,8 +58,6 @@ class ToxiGame:
                 if self.state == "microgame" and self.current_microgame:
                     self.current_microgame.handle_event(event)
 
-            # Polling after pygame.event.get() keeps keyboard and SDL controller
-            # state current and gives us edge-triggered A/B/X/Y actions.
             self.controls.update()
             self._handle_controls()
             self._update(dt)
@@ -87,39 +104,31 @@ class ToxiGame:
         if self.state != "microgame" or not self.current_microgame:
             return
         self.current_microgame.update(dt)
-        if self.current_microgame.done:
-            question_id = self.current_question["id"]
-            self.last_mastery_before = self.progress.points(question_id)
-            self.last_correct = self.current_microgame.correct
+        if not self.current_microgame.done:
+            return
+
+        question_id = self.current_question["id"]
+        self.last_mastery_before = self.progress.points(question_id)
+        self.last_correct = self.current_microgame.correct
+        self.last_became_learned = False
+
+        # Debug runs are deliberately read-only: testing a specific microgame
+        # must not change score, attempts or learning progress.
+        if not self.debug_microgame:
             self.progress.record_result(question_id, self.last_correct)
             now = self.progress.points(question_id)
             self.last_became_learned = self.last_mastery_before < MASTERY_TARGET and now >= MASTERY_TARGET
-            if self.last_correct:
-                self.controls.rumble(0.15, 0.55, 160)
-            else:
-                self.controls.rumble(0.5, 0.15, 240)
-            self.state = "result"
-            self.controls.consume_presses()
 
-    def _start_next_round(self) -> None:
-        pending = self.progress.pending_ids()
-        if not pending:
-            self.state = "finished"
-            self.current_question = None
-            self.current_microgame = None
-            self.controls.consume_presses()
-            return
+        if self.last_correct:
+            self.controls.rumble(0.15, 0.55, 160)
+        else:
+            self.controls.rumble(0.5, 0.15, 240)
+        self.state = "result"
+        self.controls.consume_presses()
 
-        min_points = min(self.progress.points(qid) for qid in pending)
-        pool = [qid for qid in pending if self.progress.points(qid) <= min_points + 1]
-        qid = random.choice(pool)
-        question = self.question_by_id[qid]
-
-        # Attempts alternate a question's two levels so both variants are used.
-        attempt = self.progress.attempts(qid)
-        variant_name = question["variants"][attempt % len(question["variants"])]
+    def _instantiate_microgame(self, question: dict, variant_name: str) -> None:
         microgame_cls = MICROGAME_TYPES[variant_name]
-
+        qid = question["id"]
         self.current_question = question
         self.current_microgame = microgame_cls(
             self.screen,
@@ -130,6 +139,47 @@ class ToxiGame:
         )
         self.state = "microgame"
         self.controls.consume_presses()
+
+    def _start_debug_round(self) -> None:
+        if not self.debug_microgame:
+            return
+        if self.debug_question_id:
+            question = self.question_by_id[self.debug_question_id]
+        else:
+            question = random.choice(QUESTIONS)
+        self._instantiate_microgame(question, self.debug_microgame)
+
+    def _start_next_round(self) -> None:
+        if self.debug_microgame:
+            self._start_debug_round()
+            return
+
+        pending = self.progress.pending_ids()
+        if not pending:
+            self.state = "finished"
+            self.current_question = None
+            self.current_microgame = None
+            self.controls.consume_presses()
+            return
+
+        min_points = min(self.progress.points(qid) for qid in pending)
+        pool = [qid for qid in pending if self.progress.points(qid) <= min_points + 1]
+
+        # Each question still alternates its assigned variants by attempt, but
+        # the scheduler first groups the currently eligible questions by their
+        # NEXT microgame and chooses a group uniformly. This prevents a game
+        # type with many question assignments from dominating the rotation.
+        variant_buckets: dict[str, list[str]] = {}
+        for qid in pool:
+            question = self.question_by_id[qid]
+            attempt = self.progress.attempts(qid)
+            variant_name = question["variants"][attempt % len(question["variants"])]
+            variant_buckets.setdefault(variant_name, []).append(qid)
+
+        variant_name = random.choice(list(variant_buckets))
+        qid = random.choice(variant_buckets[variant_name])
+        question = self.question_by_id[qid]
+        self._instantiate_microgame(question, variant_name)
 
     def _draw(self) -> None:
         if self.state == "menu":
@@ -184,6 +234,8 @@ class ToxiGame:
             return
         color = ui.ACCENT if self.last_correct else ui.DANGER
         heading_text = "RICHTIG! +1" if self.last_correct else "NOCH NICHT"
+        if self.debug_microgame:
+            heading_text = "DEBUG: RICHTIG" if self.last_correct else "DEBUG: FALSCH"
         heading = ui.font(60, True).render(heading_text, True, color)
         self.screen.blit(heading, heading.get_rect(center=(SCREEN_W // 2, 90)))
 
@@ -201,13 +253,16 @@ class ToxiGame:
 
         mastery = self.progress.points(question["id"])
         status = f"Lernfortschritt: {mastery}/{MASTERY_TARGET} | Quelle in den Notizen: Seite {question['page']}"
+        if self.debug_microgame:
+            status += " | DEBUG: Fortschritt unverändert"
         status_img = ui.font(21, True).render(status, True, ui.GOLD)
         self.screen.blit(status_img, status_img.get_rect(center=(SCREEN_W // 2, 525)))
         if self.last_became_learned:
             learned = ui.font(24, True).render("GELERNT - diese Frage wird nicht mehr gezogen!", True, ui.ACCENT)
             self.screen.blit(learned, learned.get_rect(center=(SCREEN_W // 2, 565)))
 
-        prompt = ui.font(25, True).render("A - nächstes Microgame   |   B - Menü", True, ui.ACCENT_2)
+        prompt_text = "A - Debug erneut starten   |   B - Menü" if self.debug_microgame else "A - nächstes Microgame   |   B - Menü"
+        prompt = ui.font(25, True).render(prompt_text, True, ui.ACCENT_2)
         self.screen.blit(prompt, prompt.get_rect(center=(SCREEN_W // 2, 635)))
         keyboard = ui.font(17).render("Tastatur: ENTER/LEERTASTE = weiter, ESC = Menü", True, ui.MUTED)
         self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 675)))
