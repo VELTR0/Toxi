@@ -17,6 +17,7 @@ class PokemonBattle(BaseMicrogame):
     """
 
     PLAYER_ATTACK_TIME = 0.36
+    AFTER_PLAYER_ATTACK_WAIT = 1.0
     ENEMY_ATTACK_TIME = 0.36
     DEFEAT_TIME = 1.05
     GROUND_Y = 455
@@ -84,6 +85,11 @@ class PokemonBattle(BaseMicrogame):
             return
 
         if self.phase == "player_attack":
+            # Give the hit a moment to land visually before revealing whether
+            # the question is defeated or gets to counter-attack.
+            self.phase = "after_player_attack"
+            self.phase_timer = self.AFTER_PLAYER_ATTACK_WAIT
+        elif self.phase == "after_player_attack":
             if self.chosen_correct:
                 self.phase = "enemy_defeat"
                 self.phase_timer = self.DEFEAT_TIME
@@ -160,6 +166,8 @@ class PokemonBattle(BaseMicrogame):
             text = "Welche Attacke setzt du ein?"
         elif self.phase == "player_attack":
             text = f"TOXI setzt {self.chosen.text} ein!"
+        elif self.phase == "after_player_attack":
+            text = "..."
         elif self.phase == "enemy_defeat":
             text = "Volltreffer! Die Frage wurde besiegt."
         elif self.phase == "enemy_attack":
@@ -187,9 +195,6 @@ class PokemonBattle(BaseMicrogame):
         for x in range(0, SCREEN_W, 80):
             pygame.draw.line(self.screen, (56, 83, 78), (x, self.GROUND_Y), (x + 140, SCREEN_H), 2)
 
-        # Clip the combatants at the ground line. During defeat they shake and
-        # move downward, so the ground progressively hides them instead of the
-        # sprite simply sliding across the foreground.
         old_clip = self.screen.get_clip()
         self.screen.set_clip(pygame.Rect(0, PLAY_TOP, SCREEN_W, self.GROUND_Y - PLAY_TOP))
         self._draw_player(self._player_position())
