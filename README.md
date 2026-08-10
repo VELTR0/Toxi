@@ -72,29 +72,29 @@ Standardmäßig wird dabei bei jedem Durchlauf eine zufällige Frage verwendet. 
 python main.py --debug-microgame quick_draw --debug-question hazard_risk
 ```
 
-Nach dem Ergebnis startet `A` / `ENTER` dasselbe Debug-Microgame erneut. `B` / `ESC` führt zurück ins Hauptmenü.
+Nach dem Ergebnis startet `B` / `ENTER` dasselbe Debug-Microgame erneut. `A` / `ESC` führt zurück ins Hauptmenü.
 
 ## Controller-Steuerung
 
 Das komplette Spiel ist ohne Maus und Tastatur spielbar. Toxi nutzt Pygames SDL-Controller-Schicht.
 
 - **Linker Stick / D-Pad**: bewegen bzw. Auswahl ändern
-- **A**: bestätigen / springen / Hauptaktion
+- **B**: bestätigen / springen / Hauptaktion
 - **X**: alternative Hauptaktion, z. B. Schwertschlag oder Sprung
-- **B**: zurück zum Menü / beenden
+- **A**: zurück zum Menü / beenden
 - **START**: im Hauptmenü ebenfalls starten
 - **Y**: Lernfortschritt zurücksetzen
 
 Microgame-spezifisch:
 
-- **Sword Arena**: Stick/D-Pad bewegen, A oder X schlagen
+- **Sword Arena**: Stick/D-Pad bewegen, B oder X schlagen
 - **Labyrinth-Portale**: Stick/D-Pad bewegen und ins richtige Portal laufen
-- **Platform Gates**: Stick/D-Pad laufen, A oder X springen
+- **Platform Gates**: Stick/D-Pad laufen, B oder X springen
 - **Lab Catcher**: Stick/D-Pad links/rechts bewegen
-- **Comet Click**: Stick/D-Pad zwischen Kometen wechseln, A bestätigen
-- **Battle**: Stick/D-Pad zwischen Attacken wechseln, A bestätigen
-- **Sole Man**: Stick/D-Pad links/rechts bewegen, A oder X stampfen
-- **Quick Draw**: Stick/D-Pad bewegt das Fadenkreuz frei, A oder X schießt
+- **Comet Click**: Stick/D-Pad zwischen Kometen wechseln, B bestätigen
+- **Battle**: Stick/D-Pad zwischen Attacken wechseln, B bestätigen
+- **Sole Man**: Stick/D-Pad links/rechts bewegen, B oder X stampfen
+- **Quick Draw**: Stick/D-Pad bewegt das Fadenkreuz frei, B oder X schießt
 
 Der Controller kann auch nach dem Start des Spiels angeschlossen werden; Toxi sucht automatisch erneut nach einem Gamepad. Bei richtigen bzw. falschen Antworten wird, sofern unterstützt, kurzes Rumble-Feedback ausgelöst.
 
