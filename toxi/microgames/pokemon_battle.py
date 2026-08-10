@@ -17,7 +17,7 @@ class PokemonBattle(BaseMicrogame):
     """
 
     PLAYER_ATTACK_TIME = 0.36
-    AFTER_PLAYER_ATTACK_WAIT = 1.0
+    RESULT_ANNOUNCE_TIME = 1.5
     ENEMY_ATTACK_TIME = 0.36
     DEFEAT_TIME = 1.05
     GROUND_Y = 455
@@ -85,17 +85,19 @@ class PokemonBattle(BaseMicrogame):
             return
 
         if self.phase == "player_attack":
-            # Give the hit a moment to land visually before revealing whether
-            # the question is defeated or gets to counter-attack.
-            self.phase = "after_player_attack"
-            self.phase_timer = self.AFTER_PLAYER_ATTACK_WAIT
-        elif self.phase == "after_player_attack":
+            # Reveal the result in the text box first. The combatants stay still
+            # for 1.5 seconds so the player can read what is about to happen.
             if self.chosen_correct:
-                self.phase = "enemy_defeat"
-                self.phase_timer = self.DEFEAT_TIME
+                self.phase = "announce_enemy_defeat"
             else:
-                self.phase = "enemy_attack"
-                self.phase_timer = self.ENEMY_ATTACK_TIME
+                self.phase = "announce_enemy_attack"
+            self.phase_timer = self.RESULT_ANNOUNCE_TIME
+        elif self.phase == "announce_enemy_defeat":
+            self.phase = "enemy_defeat"
+            self.phase_timer = self.DEFEAT_TIME
+        elif self.phase == "announce_enemy_attack":
+            self.phase = "enemy_attack"
+            self.phase_timer = self.ENEMY_ATTACK_TIME
         elif self.phase == "enemy_attack":
             self.phase = "player_defeat"
             self.phase_timer = self.DEFEAT_TIME
@@ -166,11 +168,9 @@ class PokemonBattle(BaseMicrogame):
             text = "Welche Attacke setzt du ein?"
         elif self.phase == "player_attack":
             text = f"TOXI setzt {self.chosen.text} ein!"
-        elif self.phase == "after_player_attack":
-            text = "..."
-        elif self.phase == "enemy_defeat":
+        elif self.phase in ("announce_enemy_defeat", "enemy_defeat"):
             text = "Volltreffer! Die Frage wurde besiegt."
-        elif self.phase == "enemy_attack":
+        elif self.phase in ("announce_enemy_attack", "enemy_attack"):
             text = "Nicht effektiv... Die Frage greift an!"
         else:
             text = "TOXI wurde getroffen."
