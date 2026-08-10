@@ -259,7 +259,7 @@ class ToxiGame:
             learned = ui.font(24, True).render("GELERNT - diese Frage wird nicht mehr gezogen!", True, ui.ACCENT)
             self.screen.blit(learned, learned.get_rect(center=(SCREEN_W // 2, 565)))
 
-        prompt_text = "A - Debug erneut starten   |   B - Menü" if self.debug_microgame else ""
+        prompt_text = "B - Debug erneut starten   |   A - Menü" if self.debug_microgame else ""
         prompt = ui.font(25, True).render(prompt_text, True, ui.ACCENT_2)
         self.screen.blit(prompt, prompt.get_rect(center=(SCREEN_W // 2, 635)))
         keyboard = ui.font(17).render("", True, ui.MUTED)
@@ -275,7 +275,7 @@ class ToxiGame:
         self.screen.blit(score, score.get_rect(center=(SCREEN_W // 2, 380)))
         detail = ui.font(28).render(f"Alle {len(QUESTIONS)} Fragen sind bei 3/3 Lernpunkten.", True, ui.TEXT)
         self.screen.blit(detail, detail.get_rect(center=(SCREEN_W // 2, 435)))
-        reset = ui.font(25, True).render("Y - komplett neu starten   |   B - beenden", True, ui.ACCENT_2)
+        reset = ui.font(25, True).render("Y - komplett neu starten   |   A - beenden", True, ui.ACCENT_2)
         self.screen.blit(reset, reset.get_rect(center=(SCREEN_W // 2, 545)))
         keyboard = ui.font(17).render("Tastatur: R = neu starten, ESC = beenden", True, ui.MUTED)
         self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 590)))
