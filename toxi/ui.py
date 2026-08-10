@@ -172,16 +172,49 @@ def draw_panel(surface: pygame.Surface, rect: pygame.Rect, color=PANEL, radius: 
     pygame.draw.rect(surface, color, rect, border_radius=radius)
 
 
-def draw_question_header(surface: pygame.Surface, question: dict, score: int, mastery: int) -> None:
+def draw_question_header(
+    surface: pygame.Surface,
+    question: dict,
+    score: int,
+    mastery: int,
+    task_prompt: str = "Wähle die richtige Antwort!",
+) -> None:
+    """Draw the shared question header and a compact task field below it."""
     panel = pygame.Rect(30, 24, surface.get_width() - 60, 150)
     draw_panel(surface, panel)
     small = font(20, True)
-    body = font(28, True)
-    surface.blit(small.render(f"Score {score}", True, GOLD), (50, 42))
+    surface.blit(small.render(f"Score {score}", True, GOLD), (50, 38))
     mastery_text = "Fortschritt: " + "●" * mastery + "○" * (3 - mastery)
     mastery_img = small.render(mastery_text, True, ACCENT)
-    surface.blit(mastery_img, (panel.right - mastery_img.get_width() - 20, 42))
-    draw_wrapped(surface, question["question"], body, TEXT, pygame.Rect(50, 80, panel.width - 40, 80), center=True)
+    surface.blit(mastery_img, (panel.right - mastery_img.get_width() - 20, 38))
+
+    question_rect = pygame.Rect(50, 65, panel.width - 40, 70)
+    body = font(28, True)
+    for size in (28, 26, 24, 22):
+        candidate = font(size, True)
+        _, text_height, _ = measure_wrapped(question["question"], candidate, question_rect.width, line_gap=3)
+        body = candidate
+        if text_height <= question_rect.height:
+            break
+    draw_wrapped(
+        surface,
+        question["question"],
+        body,
+        TEXT,
+        question_rect,
+        center=True,
+        vertical_center=True,
+        line_gap=3,
+    )
+
+    prompt_font = font(17, True)
+    prompt_width = min(520, max(250, prompt_font.size(task_prompt)[0] + 42))
+    prompt = pygame.Rect(0, 0, prompt_width, 30)
+    prompt.midbottom = (panel.centerx, panel.bottom - 5)
+    pygame.draw.rect(surface, PANEL_2, prompt, border_radius=11)
+    pygame.draw.rect(surface, ACCENT_2, prompt, 2, border_radius=11)
+    prompt_img = prompt_font.render(task_prompt, True, TEXT)
+    surface.blit(prompt_img, prompt_img.get_rect(center=prompt.center))
 
 
 def draw_button(surface: pygame.Surface, rect: pygame.Rect, text: str, hovered: bool = False) -> None:
