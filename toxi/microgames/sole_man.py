@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
 import pygame
@@ -52,8 +53,34 @@ class SoleMan(BaseMicrogame):
             rect.midbottom = (center_x, 655)
             self.answers.append((choice, rect))
 
+    @staticmethod
+    def _leg_asset_path() -> Path:
+        """Resolve ressources/sprites/leg.png from the actual game directory.
+
+        Some launchers/test runners copy Python modules into a temporary folder,
+        so __file__ is not always located inside the checked-out repository.
+        Prefer the working directory / launcher directory, where the repo's
+        ressources folder normally lives, and only use __file__ as a fallback.
+        """
+        relative = Path("ressources") / "sprites" / "leg.png"
+        candidates = [
+            Path.cwd() / relative,
+            Path(sys.argv[0]).resolve().parent / relative,
+            Path(sys.executable).resolve().parent / relative,
+            Path(__file__).resolve().parents[2] / relative,
+        ]
+        for candidate in candidates:
+            if candidate.is_file():
+                return candidate
+
+        searched = "\n".join(f" - {path}" for path in candidates)
+        raise FileNotFoundError(
+            "Sole Man konnte ressources/sprites/leg.png nicht finden. "
+            f"Gesuchte Pfade:\n{searched}"
+        )
+
     def _load_foot_sprite(self) -> pygame.Surface:
-        asset_path = Path(__file__).resolve().parents[2] / "ressources" / "sprites" / "leg.png"
+        asset_path = self._leg_asset_path()
         image = pygame.image.load(str(asset_path)).convert_alpha()
         width, height = image.get_size()
         scale = min(self.FOOT_MAX_W / width, self.FOOT_MAX_H / height)
