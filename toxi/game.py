@@ -233,7 +233,7 @@ class ToxiGame:
         if not question:
             return
         color = ui.ACCENT if self.last_correct else ui.DANGER
-        heading_text = "RICHTIG! +1" if self.last_correct else "NOCH NICHT"
+        heading_text = "RICHTIG! +1" if self.last_correct else "FALSCH"
         if self.debug_microgame:
             heading_text = "DEBUG: RICHTIG" if self.last_correct else "DEBUG: FALSCH"
         heading = ui.font(60, True).render(heading_text, True, color)
@@ -261,10 +261,10 @@ class ToxiGame:
             learned = ui.font(24, True).render("GELERNT - diese Frage wird nicht mehr gezogen!", True, ui.ACCENT)
             self.screen.blit(learned, learned.get_rect(center=(SCREEN_W // 2, 565)))
 
-        prompt_text = "A - Debug erneut starten   |   B - Menü" if self.debug_microgame else "A - nächstes Microgame   |   B - Menü"
+        prompt_text = "A - Debug erneut starten   |   B - Menü" if self.debug_microgame else ""
         prompt = ui.font(25, True).render(prompt_text, True, ui.ACCENT_2)
         self.screen.blit(prompt, prompt.get_rect(center=(SCREEN_W // 2, 635)))
-        keyboard = ui.font(17).render("Tastatur: ENTER/LEERTASTE = weiter, ESC = Menü", True, ui.MUTED)
+        keyboard = ui.font(17).render("", True, ui.MUTED)
         self.screen.blit(keyboard, keyboard.get_rect(center=(SCREEN_W // 2, 675)))
 
     def _draw_finished(self) -> None:
