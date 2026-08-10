@@ -241,15 +241,50 @@ class ToxiGame:
 
         panel = pygame.Rect(150, 150, 980, 430)
         ui.draw_panel(self.screen, panel)
-        q_font = ui.font(29, True)
-        ui.draw_wrapped(self.screen, question["question"], q_font, ui.TEXT, pygame.Rect(200, 185, 880, 80), center=True)
-
-        correct_text = question["answers"][question["correct"]]
-        ans_font = ui.font(27, True)
-        ui.draw_wrapped(self.screen, f"Richtige Antwort: {correct_text}", ans_font, ui.ACCENT, pygame.Rect(220, 285, 840, 75), center=True)
 
         expl_font = ui.font(23)
-        ui.draw_wrapped(self.screen, question["explanation"], expl_font, ui.TEXT, pygame.Rect(225, 370, 830, 110), center=True)
+        if self.last_correct:
+            # On a correct result the player already proved they know the
+            # question and answer. Keep the feedback focused on the explanation.
+            ui.draw_wrapped(
+                self.screen,
+                question["explanation"],
+                expl_font,
+                ui.TEXT,
+                pygame.Rect(225, 245, 830, 190),
+                center=True,
+                vertical_center=True,
+            )
+        else:
+            q_font = ui.font(29, True)
+            ui.draw_wrapped(
+                self.screen,
+                question["question"],
+                q_font,
+                ui.TEXT,
+                pygame.Rect(200, 185, 880, 80),
+                center=True,
+            )
+
+            correct_text = question["answers"][question["correct"]]
+            ans_font = ui.font(27, True)
+            ui.draw_wrapped(
+                self.screen,
+                f"Richtige Antwort: {correct_text}",
+                ans_font,
+                ui.ACCENT,
+                pygame.Rect(220, 285, 840, 75),
+                center=True,
+            )
+
+            ui.draw_wrapped(
+                self.screen,
+                question["explanation"],
+                expl_font,
+                ui.TEXT,
+                pygame.Rect(225, 370, 830, 110),
+                center=True,
+            )
 
         mastery = self.progress.points(question["id"])
         status = f"Lernfortschritt: {mastery}/{MASTERY_TARGET} | Quelle in den Notizen: Seite {question['page']}"
