@@ -5,6 +5,7 @@ from .platform_gates import PlatformGates
 from .lab_catcher import LabCatcher
 from .comet_click import CometClick
 from .pokemon_battle import PokemonBattle
+from .sole_man import SoleMan
 
 MICROGAME_TYPES = {
     "sword_arena": SwordArena,
@@ -13,4 +14,5 @@ MICROGAME_TYPES = {
     "lab_catcher": LabCatcher,
     "comet_click": CometClick,
     "pokemon_battle": PokemonBattle,
+    "sole_man": SoleMan,
 }
