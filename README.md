@@ -18,6 +18,7 @@ Aktuell enthaltene Microgame-Typen:
 3. **Platform Gates** - kleiner One-Screen-Platformer; die richtige Antworttür erreichen.
 4. **Lab Catcher** - die richtige Antwortkapsel mit einem Fangkorb erwischen.
 5. **Comet Click** - einen DNA-Kometen auswählen und bestätigen; Maus bleibt optional.
+6. **Battle** - retro Monsterkampf-Stil: die drei Antworten sind Attacken. Bei einer richtigen Attacke wird die Frage besiegt; bei einer falschen kontert die Frage und besiegt den Spieler.
 
 Die Fragen sind aus den im Projekt bereitgestellten Toxikologie-Notizen abgeleitet. Im Ergebnisbildschirm wird die zugehörige PDF-Seite angezeigt.
 
@@ -59,15 +60,16 @@ Microgame-spezifisch:
 - **Platform Gates**: Stick/D-Pad laufen, A oder X springen
 - **Lab Catcher**: Stick/D-Pad links/rechts bewegen
 - **Comet Click**: Stick/D-Pad zwischen Kometen wechseln, A bestätigen
+- **Battle**: Stick/D-Pad zwischen Attacken wechseln, A bestätigen
 
 Der Controller kann auch nach dem Start des Spiels angeschlossen werden; Toxi sucht automatisch erneut nach einem Gamepad. Bei richtigen bzw. falschen Antworten wird, sofern unterstützt, kurzes Rumble-Feedback ausgelöst.
 
 ### Tastatur-/Maus-Fallback
 
 - `WASD` oder Pfeiltasten: bewegen
-- `LEERTASTE`: springen / Schwertschlag
+- `LEERTASTE`: springen / Schwertschlag / bestätigen
 - `ENTER` / `LEERTASTE`: bestätigen
-- Maus: optional bei Comet Click
+- Maus: optional bei Comet Click und Battle
 - `ESC`: zurück / beenden
 - `R`: Fortschritt zurücksetzen
 
