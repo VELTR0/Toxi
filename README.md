@@ -21,6 +21,7 @@ Aktuell enthaltene Microgame-Typen:
 5. **Comet Click** - einen DNA-Kometen auswählen und bestätigen; Maus bleibt optional.
 6. **Battle** - retro Monsterkampf-Stil: die drei Antworten sind Attacken. Bei einer richtigen Attacke wird die Frage besiegt; bei einer falschen kontert die Frage und besiegt den Spieler.
 7. **Sole Man** - einen schwebenden Fuß links/rechts ausrichten und die gewählte Antwort mit einem schnellen Stampfer zerdrücken.
+8. **Quick Draw** - ein Fadenkreuz frei über den Bildschirm bewegen und auf die richtige Antwort schießen; Fehlschüsse lösen nur die Schussanimation aus.
 
 Die Fragen sind aus den im Projekt bereitgestellten Toxikologie-Notizen abgeleitet. Im Ergebnisbildschirm wird die zugehörige PDF-Seite angezeigt.
 
@@ -49,7 +50,7 @@ python main.py
 Ein bestimmtes Microgame kann direkt gestartet werden, ohne den Lernfortschritt, Score oder die Versuche zu verändern:
 
 ```powershell
-python main.py --debug-microgame sole_man
+python main.py --debug-microgame quick_draw
 ```
 
 Verfügbare Namen:
@@ -62,19 +63,20 @@ lab_catcher
 comet_click
 pokemon_battle
 sole_man
+quick_draw
 ```
 
 Standardmäßig wird dabei bei jedem Durchlauf eine zufällige Frage verwendet. Optional kann zusätzlich eine konkrete Frage-ID festgelegt werden:
 
 ```powershell
-python main.py --debug-microgame sole_man --debug-question toxicokinetics_definition
+python main.py --debug-microgame quick_draw --debug-question hazard_risk
 ```
 
 Nach dem Ergebnis startet `A` / `ENTER` dasselbe Debug-Microgame erneut. `B` / `ESC` führt zurück ins Hauptmenü.
 
 ## Controller-Steuerung
 
-Das komplette Spiel ist ohne Maus und Tastatur spielbar. Toxi nutzt Pygames SDL-Controller-Schicht und zeigt im Hauptmenü den erkannten Controller an.
+Das komplette Spiel ist ohne Maus und Tastatur spielbar. Toxi nutzt Pygames SDL-Controller-Schicht.
 
 - **Linker Stick / D-Pad**: bewegen bzw. Auswahl ändern
 - **A**: bestätigen / springen / Hauptaktion
@@ -92,13 +94,14 @@ Microgame-spezifisch:
 - **Comet Click**: Stick/D-Pad zwischen Kometen wechseln, A bestätigen
 - **Battle**: Stick/D-Pad zwischen Attacken wechseln, A bestätigen
 - **Sole Man**: Stick/D-Pad links/rechts bewegen, A oder X stampfen
+- **Quick Draw**: Stick/D-Pad bewegt das Fadenkreuz frei, A oder X schießt
 
 Der Controller kann auch nach dem Start des Spiels angeschlossen werden; Toxi sucht automatisch erneut nach einem Gamepad. Bei richtigen bzw. falschen Antworten wird, sofern unterstützt, kurzes Rumble-Feedback ausgelöst.
 
 ### Tastatur-/Maus-Fallback
 
 - `WASD` oder Pfeiltasten: bewegen
-- `LEERTASTE`: springen / Schwertschlag / stampfen / bestätigen
+- `LEERTASTE`: springen / Schwertschlag / stampfen / schießen / bestätigen
 - `ENTER` / `LEERTASTE`: bestätigen
 - Maus: optional bei Comet Click und Battle
 - `ESC`: zurück / beenden
